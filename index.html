@@ -46,7 +46,7 @@
 
     /* ===== HISTORY ===== */
     .history-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:0.85rem; }
-    .history-time{ color:var(--muted); font-size:.76rem; font-family:'Inter',sans-serif; }
+    .history-time{ color:var(--muted); font-size:.76rem; font-family:'Inter',sans-serif; text-align: right; }
 
     /* ===== TRANG PHỤ (CONFIG) ===== */
     #view-config .card-title { 
@@ -194,7 +194,6 @@
 </div>
 
 <script>
-// Logic JavaScript được giữ nguyên hoàn toàn
 (function(){
   var t = localStorage.getItem('hm-theme') || 'dark';
   if(t === 'light') document.documentElement.setAttribute('data-theme','light');
@@ -217,6 +216,7 @@ function showPage(id){
   window.scrollTo(0,0);
 }
 
+// Khởi tạo Firebase
 var firebaseConfig = {
   apiKey: "AIzaSyCEfYu2WL_SZtfJPRpXMnUJ3i-zPTk6BeY",
   databaseURL: "https://heart-monitor-fd061-default-rtdb.firebaseio.com/",
@@ -228,8 +228,15 @@ var db = firebase.database();
 function formatTime(t){
   if(!t) return '—';
   if(t < 1600000000000) return Math.floor(t/1000) + 's sau boot';
-  return new Date(t).toLocaleTimeString('vi-VN');
+  var d = new Date(t);
+  var timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return timeStr + '<br>' + dateStr;
 }
+
+// SVGs cho lịch sử
+var heartSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="var(--red)"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+var dropSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="var(--cyan)"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>';
 
 db.ref('/').on('value', function(snap){
   var d = snap.val();
@@ -250,7 +257,11 @@ db.ref('/').on('value', function(snap){
     var items = Object.values(d.History).reverse().slice(0,10);
     histEl.innerHTML = items.map(function(i){
       return '<div class="history-item">'
-        + '<span><b style="color:var(--red)">❤ ' + (i.b||'?') + '</b> | <b style="color:var(--cyan)">○ ' + (i.s||'?') + '%</b></span>'
+        + '<span style="display:flex; align-items:center; gap:12px;">'
+        + '<b style="color:var(--red); display:flex; align-items:center; gap:4px;">' + heartSVG + (i.b||'?') + '</b>'
+        + '<span style="color:var(--muted)">|</span>'
+        + '<b style="color:var(--cyan); display:flex; align-items:center; gap:4px;">' + dropSVG + (i.s||'?') + '%</b>'
+        + '</span>'
         + '<span class="history-time">' + formatTime(i.t) + '</span>'
         + '</div>';
     }).join('');
