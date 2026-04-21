@@ -289,8 +289,7 @@
         document.getElementById('status-text').innerText = "Lỗi kết nối Firebase";
         document.getElementById('status-dot').style.background = "var(--red)";
     });
-
-    // 4. GỬI CẤU HÌNH TỪ XA
+  // 4. GỬI CẤU HÌNH TỪ XA
     function sendRemoteConfig() {
         const ssid = document.getElementById('remote-ssid').value.trim();
         const pass = document.getElementById('remote-pass').value;
@@ -302,6 +301,7 @@
         }
 
         if (confirm("Gửi cấu hình này xuống thiết bị? Mạch sẽ tự động đổi WiFi và khởi động lại.")) {
+            // Lưu ý: dùng biến database thay vì db để khớp với code ở trên
             database.ref('/RemoteConfig').set({
                 ssid: ssid,
                 pass: pass,
@@ -309,6 +309,8 @@
                 timestamp: Date.now()
             }).then(() => {
                 alert("Đã gửi thành công! Hãy đợi khoảng 10-20 giây để mạch nhận lệnh.");
+                // Tải lại trang để xóa form sau khi gửi
+                window.location.reload(); 
             }).catch((err) => {
                 alert("Lỗi khi gửi lệnh: " + err);
             });
