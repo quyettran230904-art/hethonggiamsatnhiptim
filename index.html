@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Health Monitor — Cloud Dashboard</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
 
     /* ===== THEME VARIABLES ===== */
     :root {
@@ -18,17 +18,17 @@
       --bg:#f1f5f9; --surface:#ffffff; --surface2:#f8fafc;
       --cyan:#0891b2; --red:#dc2626; --green:#059669;
       --text:#1e293b; --muted:#64748b; --border:#e2e8f0;
-      --input-bg:#f8fafc; --input-text:#1e293b;   /* ← FIX LIGHT MODE */
+      --input-bg:#f8fafc; --input-text:#1e293b;
     }
 
     *{ margin:0; padding:0; box-sizing:border-box; }
-    body{ font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:20px; transition:background .3s,color .3s; }
+    body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:20px; transition:background .3s,color .3s; }
 
     /* ===== LAYOUT ===== */
     .wrapper{ max-width:820px; margin:0 auto; }
 
     header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
-    .logo{ font-size:1rem; font-weight:800; color:var(--cyan); letter-spacing:1.5px; }
+    .logo{ font-family:'Space Grotesk',sans-serif; font-size:1rem; font-weight:700; color:var(--cyan); letter-spacing:1.5px; }
 
     /* ===== VIEWS ===== */
     .view{ display:none; animation:fadeUp .35s ease-out forwards; }
@@ -40,11 +40,15 @@
 
     /* ===== CARD ===== */
     .card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px; transition:background .3s,border-color .3s; }
-    .card-label{ font-size:0.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; display:block; }
-    .card-val{ font-family:'DM Mono',monospace; font-size:3.8rem; font-weight:500; line-height:1; }
+    .card-label{ font-size:0.72rem; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; display:block; }
+    .card-val{ font-family:'JetBrains Mono',monospace; font-size:3.8rem; font-weight:500; line-height:1; }
+
+    /* ===== CARD TITLE ===== */
+    .card-title{ font-family:'Space Grotesk',sans-serif; font-size:1.05rem; font-weight:600; color:var(--cyan); margin-bottom:6px; }
+    .card-desc{ font-size:.85rem; color:var(--muted); margin-bottom:22px; line-height:1.6; }
 
     /* ===== STATUS BADGE ===== */
-    .badge{ display:inline-block; margin-top:10px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:600; }
+    .badge{ display:inline-flex; align-items:center; gap:4px; margin-top:10px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:500; }
     .badge-ok  { background:rgba(0,224,150,.12); color:var(--green); }
     .badge-bad { background:rgba(255,61,90,.12);  color:var(--red); }
     .badge-wait{ background:rgba(74,85,104,.15);  color:var(--muted); }
@@ -53,52 +57,67 @@
     .history-item{
       display:flex; justify-content:space-between; align-items:center;
       padding:12px 0; border-bottom:1px solid var(--border);
-      font-family:'DM Mono',monospace; font-size:0.85rem;
+      font-family:'JetBrains Mono',monospace; font-size:0.83rem;
     }
     .history-item:last-child{ border-bottom:none; }
     .history-bpm{ color:var(--red); }
     .history-spo2{ color:var(--cyan); }
-    .history-time{ color:var(--muted); font-size:.78rem; }
+    .history-time{ color:var(--muted); font-size:.76rem; }
 
     /* ===== FORM ===== */
     .field{ margin-bottom:16px; }
-    .field label{ display:block; font-size:.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .field label{ display:block; font-size:.78rem; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
 
-    /* FIX: input text & background đều dùng CSS var */
     input{
-      width:100%; padding:14px 16px;
+      width:100%; padding:13px 15px;
       background:var(--input-bg);
       border:1.5px solid var(--border);
       border-radius:10px;
-      color:var(--input-text);     /* ← FIX LIGHT MODE text */
-      font-size:1rem;
-      font-family:'Outfit',sans-serif;
+      color:var(--input-text);
+      font-size:.95rem;
+      font-family:'Inter',sans-serif;
       outline:none;
       transition:border-color .2s, background .3s, color .3s;
       -webkit-appearance:none;
-      appearance: none;
+      appearance:none;
     }
     input:focus{ border-color:var(--cyan); }
-    input::placeholder{ color:var(--muted); }
+    input::placeholder{ color:var(--muted); opacity:.7; }
 
     /* ===== BUTTONS ===== */
-    .btn{ display:block; width:100%; padding:16px; border-radius:12px; border:none; font-family:'Outfit',sans-serif; font-weight:600; cursor:pointer; text-align:center; transition:.2s; text-decoration:none; font-size:1rem; }
+    .btn{
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      width:100%; padding:15px; border-radius:12px; border:none;
+      font-family:'Space Grotesk',sans-serif; font-weight:600;
+      cursor:pointer; text-align:center; transition:.2s;
+      text-decoration:none; font-size:.95rem; letter-spacing:.3px;
+    }
     .btn:active{ transform:scale(0.98); }
-    .btn-primary{ background:var(--cyan); color:#000; font-weight:800; font-size:1.05rem; letter-spacing:.5px; }
-    .btn-primary:hover{ opacity:.88; box-shadow:0 4px 14px rgba(0,229,255,.25); }
+
+    /* Nút Lưu — solid, nổi bật */
+    .btn-primary{
+      background:#0891b2;
+      color:#ffffff;
+      box-shadow:0 4px 14px rgba(8,145,178,.3);
+    }
+    .btn-primary:hover{ background:#0e7490; box-shadow:0 6px 18px rgba(8,145,178,.35); }
+
     .btn-outline{ background:transparent; border:1.5px solid var(--border); color:var(--text); margin-top:10px; }
     .btn-outline:hover{ border-color:var(--cyan); color:var(--cyan); }
     .btn-danger{ background:transparent; border:1.5px solid var(--red); color:var(--red); margin-top:10px; }
     .btn-danger:hover{ background:rgba(255,61,90,.08); }
-    .btn-sm{ width:auto; padding:8px 14px; font-size:.85rem; }
+    .btn-sm{ width:auto; padding:8px 14px; font-size:.82rem; margin-top:0; }
 
     /* ===== LOADER ===== */
-    .loader{ text-align:center; padding:32px 0; color:var(--muted); font-size:.9rem; }
-    .loader::before{ content:''; display:block; width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+    .loader{ text-align:center; padding:32px 0; color:var(--muted); font-size:.85rem; font-family:'Inter',sans-serif; }
+    .loader::before{ content:''; display:block; width:26px; height:26px; border:2.5px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
     @keyframes spin{ to{ transform:rotate(360deg); } }
 
     /* ===== EMPTY STATE ===== */
-    .empty{ text-align:center; padding:24px 0; color:var(--muted); font-size:.88rem; }
+    .empty{ text-align:center; padding:24px 0; color:var(--muted); font-size:.85rem; font-family:'Inter',sans-serif; }
+
+    /* Icon SVG inline */
+    .icon{ width:17px; height:17px; flex-shrink:0; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -138,10 +157,8 @@
     <!-- ===== TRANG CẤU HÌNH ===== -->
     <div id="view-config" class="view">
       <div class="card">
-        <h2 style="font-size:1.1rem; margin-bottom:6px; color:var(--cyan)">Cấu hình Cloud</h2>
-        <p style="font-size:.88rem; color:var(--muted); margin-bottom:22px">
-          Nhập thông tin mạng mới cho ESP32. Lệnh gửi qua Firebase — mạch sẽ tự khởi động lại.
-        </p>
+        <div class="card-title">Cấu hình Cloud</div>
+        <p class="card-desc">Nhập thông tin mạng mới cho ESP32. Lệnh gửi qua Firebase — mạch sẽ tự khởi động lại.</p>
 
         <div class="field">
           <label>Tên WiFi (SSID)</label>
@@ -156,7 +173,12 @@
           <input type="tel" id="r-phone" placeholder="Ví dụ: 09111741xxx">
         </div>
 
-        <button class="btn btn-primary" onclick="sendRemoteConfig()">Lưu và chấp nhận</button>
+        <button class="btn btn-primary" onclick="sendRemoteConfig()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Lưu và Chấp Nhận
+        </button>
         <button class="btn btn-danger" onclick="showPage('main')">◀ Quay lại trang chủ</button>
       </div>
     </div>
@@ -198,13 +220,9 @@ firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 
 // ===== FORMAT TIMESTAMP =====
-// Nhận epoch ms hoặc millis() từ ESP32 (nhỏ hơn 1 tỷ → là millis, không phải epoch)
 function formatTime(t){
   if(!t) return '—';
-  // millis() từ ESP32 thường < 86_400_000 (1 ngày) nếu mới boot
-  // epoch ms > 1_600_000_000_000 (năm 2020+)
   if(t < 1600000000000){
-    // Là millis, chuyển thành "XXm YYs từ lúc boot"
     var s = Math.floor(t / 1000);
     var m = Math.floor(s / 60);
     return m > 0 ? (m + 'ph ' + (s % 60) + 's') : (s + 's sau boot');
@@ -217,20 +235,17 @@ db.ref('/').on('value', function(snap){
   var d = snap.val();
   if(!d) return;
 
-  // --- Cập nhật số liệu ---
   var bpm  = d.NhipTim || 0;
   var spo2 = d.Oxy     || 0;
   document.getElementById('bpm').innerText  = bpm  > 0 ? bpm  : '--';
   document.getElementById('spo2').innerText = spo2 > 0 ? spo2 : '--';
 
-  // Badge trạng thái BPM
   var badge = document.getElementById('bpm-badge');
-  if(bpm > 100)      { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim cao!'; }
-  else if(bpm < 60 && bpm > 0) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim thấp!'; }
-  else if(bpm > 0)   { badge.className='badge badge-ok';  badge.innerText='✓ Bình thường'; }
-  else               { badge.className='badge badge-wait'; badge.innerText='Đang chờ dữ liệu...'; }
+  if(bpm > 100)           { badge.className='badge badge-bad';  badge.innerText='⚠ Nhịp tim cao!'; }
+  else if(bpm < 60 && bpm > 0) { badge.className='badge badge-bad';  badge.innerText='⚠ Nhịp tim thấp!'; }
+  else if(bpm > 0)        { badge.className='badge badge-ok';   badge.innerText='✓ Bình thường'; }
+  else                    { badge.className='badge badge-wait'; badge.innerText='Đang chờ dữ liệu...'; }
 
-  // --- Lịch sử ---
   var histEl = document.getElementById('history-list');
   if(d.History){
     var items = Object.values(d.History).reverse().slice(0,10);
@@ -265,9 +280,8 @@ function sendRemoteConfig(){
     ssid:s, pass:p, phone:ph, timestamp:Date.now()
   }).then(function(){
     alert('Đã gửi thành công! Thiết bị sẽ khởi động lại trong vài giây.');
-    // Xóa form
-    document.getElementById('r-ssid').value = '';
-    document.getElementById('r-pass').value = '';
+    document.getElementById('r-ssid').value  = '';
+    document.getElementById('r-pass').value  = '';
     document.getElementById('r-phone').value = '';
     showPage('main');
   }).catch(function(err){
