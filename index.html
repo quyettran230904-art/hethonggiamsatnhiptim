@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giám Sát Y Tế - Cloud</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;600;800&display=swap');
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2236;--cyan:#00e5ff;--red:#ff3d5a;--orange:#ff9100;--green:#00e096;--text:#e2e8f0;--muted:#4a5568;--border:#1e2d42}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.4;pointer-events:none;z-index:0}
+header{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:16px 28px;border-bottom:1px solid var(--border);background:rgba(10,14,26,.85);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.logo h1{font-size:1.1rem;font-weight:600;letter-spacing:.05em;color:var(--cyan)}
+.badge{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted);text-align:right;line-height:1.6}
+.badge strong{color:var(--text);display:block;font-size:.85rem}
+main{position:relative;z-index:1;flex:1;max-width:860px;width:100%;margin:0 auto;padding:28px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;position:relative;overflow:hidden;transition:.3s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,var(--cyan));border-radius:16px 16px 0 0}
+.card-bpm{--accent:var(--red)}.card-spo2{--accent:var(--cyan)}
+.card-label{font-size:.75rem;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:16px}
+.card-val{font-family:'DM Mono',monospace;font-size:4.5rem;font-weight:500;line-height:1;margin-bottom:4px;transition:color .4s}
+.card-unit{font-size:.85rem;color:var(--muted);margin-bottom:20px}
+.card-status{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;letter-spacing:.04em;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--border);transition:.4s}
+.dot-status{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.card-icon{position:absolute;top:22px;right:22px;font-size:1.6rem;opacity:.12}
+.card.danger{animation:dangerPulse .9s infinite}
+@keyframes dangerPulse{0%,100%{border-color:var(--border)}50%{border-color:var(--red);box-shadow:0 0 20px rgba(255,61,90,.15)}}
+.timebar{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 20px;margin-bottom:24px;font-family:'DM Mono',monospace;font-size:.85rem}
+.timebar-label{color:var(--muted);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase}
+#time-now{color:var(--cyan);font-size:1.1rem}
+.conn-indicator{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.conn-dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+footer{position:relative;z-index:1;text-align:center;padding:14px;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border)}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <h1>HEALTH MONITOR</h1>
+  </div>
+  <div class="badge">
+    <strong>Nguyen Thanh Long</strong>
+    MSSV: 2022605307
+  </div>
+</header>
+<main>
+  <div class="timebar">
+    <div>
+      <div class="timebar-label">Thoi gian thuc</div>
+      <div id="time-now">--:--:--</div>
+    </div>
+    <div class="conn-indicator">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-text">Dang ket noi Firebase...</span>
+    </div>
+  </div>
+  
+  <div class="grid">
+    <div class="card card-bpm" id="card-bpm">
+      <div class="card-icon">♥</div>
+      <div class="card-label">Nhip Tim</div>
+      <div class="card-val" id="bpm" style="color:var(--red)">--</div>
+      <div class="card-unit">BPM</div>
+      <div class="card-status" id="st-bpm">
+        <div class="dot-status" style="background:var(--muted)"></div>
+        <span>Dang cho du lieu...</span>
+      </div>
+    </div>
+    
+    <div class="card card-spo2" id="card-spo2">
+      <div class="card-icon">◎</div>
+      <div class="card-label">Nong Do Oxy</div>
+      <div class="card-val" id="spo2" style="color:var(--cyan)">--</div>
+      <div class="card-unit">% SpO2</div>
+      <div class="card-status" id="st-spo2">
+        <div class="dot-status" style="background:var(--muted)"></div>
+        <span>Dang cho du lieu...</span>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>Do an tot nghiep &middot; Dai hoc Cong nghiep Ha Noi</footer>
+
+<script>
+// 1. CẬP NHẬT ĐỒNG HỒ
+setInterval(function(){ document.getElementById('time-now').textContent=new Date().toLocaleTimeString('vi-VN'); },1000);
+document.getElementById('time-now').textContent=new Date().toLocaleTimeString('vi-VN');
+
+// 2. HÀM CẬP NHẬT MÀU SẮC THẺ
+function setCard(cardId, stId, dotColor, textColor, text, danger){
+  document.getElementById(cardId).classList.toggle('danger', danger);
+  var st = document.getElementById(stId);
+  st.children[0].style.background = dotColor;
+  st.children[1].textContent = text;
+  st.style.color = textColor;
+  st.style.borderColor = danger ? 'rgba(255,61,90,.3)' : '';
+  st.style.background = danger ? 'rgba(255,61,90,.08)' : 'rgba(255,255,255,.05)';
+}
+
+// 3. CẤU HÌNH KẾT NỐI FIREBASE
+// Cập nhật đoạn này dựa trên ảnh Firebase Console của bạn
+const firebaseConfig = {
+  apiKey: "AIzaSyCEfYu2WL_SZtfJPRpXMnUJ3i-zPTk6BeY",
+  authDomain: "heart-monitor-fd061.firebaseapp.com",
+  databaseURL: "https://heart-monitor-fd061-default-rtdb.firebaseio.com/", // Link này lấy từ mục Realtime Database
+  projectId: "heart-monitor-fd061",
+  storageBucket: "heart-monitor-fd061.firebasestorage.app",
+  messagingSenderId: "548487794902",
+  appId: "1:548487794902:web:2fc9fd9edad7685c5f3977"
+};
+
+// Khởi tạo Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// 4. LẮNG NGHE DỮ LIỆU TỪ FIREBASE REALTIME
+database.ref('/').on('value', (snapshot) => {
+  const data = snapshot.val();
+  
+  if (data) {
+    document.getElementById('conn-dot').className = 'conn-dot';
+    document.getElementById('conn-text').textContent = 'Da dong bo Cloud';
+
+    let bpm = data.NhipTim || 0;
+    let spo2 = data.Oxy || 0;
+
+    document.getElementById('bpm').textContent = bpm > 0 ? bpm : '--';
+    document.getElementById('spo2').textContent = spo2 > 0 ? spo2 : '--';
+
+    // Cập nhật trạng thái Nhịp tim
+    if (bpm > 100) setCard('card-bpm','st-bpm','var(--red)','var(--red)','NGUY HIEM - NHIP CAO',true);
+    else if (bpm > 30 && bpm < 60) setCard('card-bpm','st-bpm','var(--orange)','var(--orange)','CANH BAO - NHIP THAP',false);
+    else if (bpm >= 60) setCard('card-bpm','st-bpm','var(--green)','var(--green)','BINH THUONG',false);
+    else setCard('card-bpm','st-bpm','var(--muted)','var(--muted)','Dang do...',false);
+
+    // Cập nhật trạng thái SpO2
+    if (spo2 > 0 && spo2 < 95) setCard('card-spo2','st-spo2','var(--red)','var(--red)','NGUY HIEM - THIEU OXY',true);
+    else if (spo2 >= 95) setCard('card-spo2','st-spo2','var(--green)','var(--green)','CHI SO OXY TOT',false);
+    else setCard('card-spo2','st-spo2','var(--muted)','var(--muted)','Dang do...',false);
+  }
+}, (error) => {
+  // Báo lỗi nếu mất mạng
+  document.getElementById('conn-dot').className = 'conn-dot off';
+  document.getElementById('conn-text').textContent = 'Mat ket noi Cloud';
+});
+</script>
+</body>
+</html>
