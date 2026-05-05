@@ -136,7 +136,7 @@
 
 <div class="wrapper">
   <header>
-    <div class="logo">HEALTH MONITOR</div>
+    <div class="logo">BỘ ĐO NHỊP TIM</div>
     <button class="btn btn-outline btn-sm" onclick="toggleTheme()">🌓 Theme</button>
   </header>
 
@@ -159,7 +159,7 @@
         <div id="history-list"><div class="loader"></div></div>
       </div>
 
-      <button class="btn btn-outline btn-toggle-view" style="margin-top:12px" onclick="showPage('config')">⚙ Thiết lập thiết bị từ xa</button>
+      <button class="btn btn-outline btn-toggle-view" style="margin-top:12px" onclick="showPage('config')">⚙ Thiết lập thiết bị</button>
     </div>
 
     <div id="view-config" class="view">
@@ -248,7 +248,7 @@ db.ref('/').on('value', function(snap){
 
   var badge = document.getElementById('bpm-badge');
   if(bpm > 100) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim cao!'; }
-  else if(bpm < 60 && bpm > 0) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim thấp!'; }
+  else if(bpm < 50 && bpm > 0) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim thấp!'; }
   else if(bpm > 0) { badge.className='badge badge-ok'; badge.innerText='✓ Bình thường'; }
   else { badge.className='badge badge-wait'; badge.innerText='Đang chờ dữ liệu...'; }
 
