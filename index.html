@@ -1,2177 +1,286 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Giám Sát Sức Khỏe Bệnh Nhân</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #0dcaf0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Health Monitor — Cloud Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg:#0a0e1a; --surface:#111827; --surface2:#1a2236;
+      --cyan:#00e5ff; --red:#ff3d5a; --green:#00e096;
+      --text:#e2e8f0; --muted:#4a5568; --border:#1e2d42;
+      --input-bg:#1a2236; --input-text:#e2e8f0;
+    }
+    [data-theme="light"] {
+      --bg:#f1f5f9; --surface:#ffffff; --surface2:#f8fafc;
+      --cyan:#0891b2; --red:#dc2626; --green:#059669;
+      --text:#1e293b; --muted:#64748b; --border:#e2e8f0;
+      --input-bg:#f8fafc; --input-text:#1e293b;
+    }
 
-        .main-container {
-            padding: 20px 0;
-        }
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:20px; transition:background .3s,color .3s; }
 
-        .health-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 30px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
-        }
+    .wrapper{ max-width:820px; margin:0 auto; }
+    header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+    .logo{ font-family:'Space Grotesk',sans-serif; font-size:1rem; font-weight:700; color:var(--cyan); letter-spacing:1.5px; }
 
-        .health-card:hover {
-            transform: translateY(-5px);
-        }
+    /* ===== VIEWS ===== */
+    .view{ display:none; animation:fadeUp .35s ease-out forwards; }
+    .view.active{ display:block; }
+    @keyframes fadeUp{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-        .metric-display {
-            font-size: 3rem;
-            font-weight: bold;
-            text-align: center;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 10px;
-        }
+    /* ===== METRIC GRID ===== */
+    .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; margin-bottom:18px; }
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px; transition:background .3s,border-color .3s; }
+    .card-label{ font-size:0.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px; display:block; }
+    .card-val{ font-family:'JetBrains Mono',monospace; font-size:3.8rem; font-weight:500; line-height:1; }
 
-        .metric-display.heart-rate {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
+    .badge{ display:inline-flex; align-items:center; gap:4px; margin-top:10px; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-ok { background:rgba(0,224,150,.12); color:var(--green); }
+    .badge-bad { background:rgba(255,61,90,.12); color:var(--red); }
+    .badge-wait{ background:rgba(74,85,104,.15); color:var(--muted); }
 
-        .metric-display.spo2 {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
+    /* ===== HISTORY ===== */
+    .history-item{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:0.85rem; }
+    .history-time{ color:var(--muted); font-size:.76rem; font-family:'Inter',sans-serif; text-align: right; }
 
-        .patient-form {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+    /* ===== TRANG PHỤ (CONFIG) ===== */
+    #view-config .card-title { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 1.4rem; 
+      font-weight: 700; 
+      margin-bottom: 8px;
+    }
+    #view-config .card-desc { 
+      font-size: 0.95rem; 
+      color: var(--muted); 
+      line-height: 1.5; 
+      margin-bottom: 24px; 
+    }
+    #view-config label { 
+      font-size: 0.85rem; 
+      font-weight: 600; 
+      color: var(--muted); 
+      display: block; 
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        .btn-custom {
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+    /* ===== FORM & INPUTS ===== */
+    .field{ margin-bottom:20px; }
+    input{ 
+      width:100%; 
+      padding:14px 16px; 
+      background:var(--input-bg); 
+      border:1.5px solid var(--border); 
+      border-radius:10px; 
+      color:var(--input-text); 
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      outline:none; 
+      transition:0.2s; 
+    }
+    input:focus{ border-color:var(--cyan); box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1); }
+    input::placeholder { color: var(--muted); font-size: 0.9rem; }
 
-        .btn-custom:hover {
-            transform: scale(1.05);
-        }
+    /* ===== BUTTONS ===== */
+    .btn{ 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap:8px; 
+      width:100%; 
+      padding:14px; 
+      border-radius:12px; 
+      border:none; 
+      cursor:pointer; 
+      transition:.2s; 
+      text-decoration:none; 
+      font-family: 'Inter', sans-serif;
+      font-weight:600; 
+      font-size: 0.95rem;
+    }
+    .btn:active{ transform:scale(0.98); }
 
-        .record-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
-            border-left: 4px solid var(--primary-color);
-        }
+    .btn-primary{
+      background:#0891b2;
+      color: #ffffff !important; 
+      box-shadow:0 4px 14px rgba(8,145,178,.3);
+      font-size: 1rem;
+    }
+    .btn-primary:hover{ background:#0e7490; box-shadow:0 6px 18px rgba(8,145,178,.4); }
 
-        .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
+    .btn-outline{ background:transparent; border:1.5px solid var(--border); color:var(--text); margin-top:10px; }
+    .btn-outline:hover{ border-color:var(--cyan); color:var(--cyan); }
+    
+    .btn-danger{ background:rgba(255,61,90,.1); border:1.5px solid transparent; color:var(--red); margin-top:12px; }
+    .btn-danger:hover{ background:rgba(255,61,90,.2); }
+    
+    .btn-sm{ width:auto; padding:8px 14px; font-size:.85rem; margin-top:0; }
 
-        .chat-container {
-            background: white;
-            border-radius: 15px;
-            height: 500px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+    .loader{ text-align:center; padding:32px 0; color:var(--muted); font-size:.85rem; }
+    .loader::before{ content:''; display:block; width:26px; height:26px; border:2.5px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+    .icon{ width:18px; height:18px; flex-shrink:0; }
+  </style>
 
-        .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px 15px 0 0;
-            font-weight: 600;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .chat-message {
-            margin: 10px 0;
-            padding: 10px 15px;
-            border-radius: 15px;
-            max-width: 80%;
-        }
-
-        .chat-message.user {
-            background: #e3f2fd;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        .chat-message.bot {
-            background: white;
-            border: 1px solid #dee2e6;
-        }
-
-        .chat-input-container {
-            padding: 15px;
-            border-top: 1px solid #dee2e6;
-            background: white;
-            border-radius: 0 0 15px 15px;
-        }
-
-        .pulse-animation {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .navbar-custom {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .section-title {
-            color: white;
-            font-weight: 700;
-            margin: 30px 0 20px 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .patient-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-left: 5px solid var(--primary-color);
-        }
-
-        .patient-card:hover {
-            transform: translateX(10px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            border-left-color: var(--success-color);
-        }
-
-        .patient-card .patient-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .patient-card .patient-info {
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-
-        .patient-card .record-count {
-            background: var(--primary-color);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .typing-indicator {
-            display: flex;
-            gap: 5px;
-            padding: 10px;
-        }
-
-        .typing-indicator span {
-            width: 8px;
-            height: 8px;
-            background: #999;
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
-        }
-    </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-heartbeat text-danger"></i> 
-                <strong>Hệ Thống Giám Sát Sức Khỏe</strong>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#section-patient"><i class="fas fa-user-injured"></i> Bệnh nhân</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#section-monitoring"><i class="fas fa-heartbeat"></i> Giám sát</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#section-records"><i class="fas fa-clipboard-list"></i> Bản ghi</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#section-chatbot"><i class="fas fa-comments"></i> Tư vấn</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container main-container">
-        <!-- Form Thông Tin Bệnh Nhân -->
-        <div id="section-patient">
-            <h2 class="section-title"><i class="fas fa-user-injured"></i> Thông Tin Bệnh Nhân</h2>
-            <div class="patient-form">
-                <form id="patientForm">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="patientName" class="form-label">
-                                <i class="fas fa-user"></i> Họ và Tên <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="patientName" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="patientAge" class="form-label">
-                                <i class="fas fa-birthday-cake"></i> Tuổi <span class="text-danger">*</span>
-                            </label>
-                            <input type="number" class="form-control" id="patientAge" min="1" max="150" required>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="patientGender" class="form-label">
-                                <i class="fas fa-venus-mars"></i> Giới Tính <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="patientGender" required>
-                                <option value="">Chọn...</option>
-                                <option value="Nam">Nam</option>
-                                <option value="Nữ">Nữ</option>
-                                <option value="Khác">Khác</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="patientPhone" class="form-label">
-                                <i class="fas fa-phone"></i> Số Điện Thoại <span class="text-danger">*</span>
-                            </label>
-                            <input type="tel" class="form-control" id="patientPhone" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="patientId" class="form-label">
-                                <i class="fas fa-id-card"></i> Mã Bệnh Nhân
-                            </label>
-                            <input type="text" class="form-control" id="patientId" readonly>
-                        </div>
-                    </div>
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-primary btn-custom">
-                            <i class="fas fa-save"></i> Lưu Thông Tin
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-custom" onclick="resetForm()">
-                            <i class="fas fa-redo"></i> Nhập Mới
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<div class="wrapper">
+  <header>
+    <div class="logo">BỘ ĐO NHỊP TIM</div>
+    <button class="btn btn-outline btn-sm" onclick="toggleTheme()">🌓 Theme</button>
+  </header>
 
-        <!-- Giám Sát Trực Tiếp -->
-        <div id="section-monitoring">
-            <h2 class="section-title"><i class="fas fa-heartbeat"></i> Giám Sát Trực Tiếp</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="health-card">
-                        <h4 class="text-center mb-3">
-                            <i class="fas fa-heart text-danger"></i> Nhịp Tim
-                        </h4>
-                        <div class="metric-display heart-rate" id="currentHeartRate">
-                            <span id="heartRateValue">--</span>
-                            <small style="font-size: 1.5rem;">bpm</small>
-                        </div>
-                        <div class="text-center">
-                            <span class="status-badge bg-secondary" id="heartRateStatus">Chờ dữ liệu...</span>
-                        </div>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">Cập nhật: <span id="heartRateTime">--</span></small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="health-card">
-                        <h4 class="text-center mb-3">
-                            <i class="fas fa-lungs text-info"></i> Nồng Độ Oxy (SpO2)
-                        </h4>
-                        <div class="metric-display spo2" id="currentSpO2">
-                            <span id="spo2Value">--</span>
-                            <small style="font-size: 1.5rem;">%</small>
-                        </div>
-                        <div class="text-center">
-                            <span class="status-badge bg-secondary" id="spo2Status">Chờ dữ liệu...</span>
-                        </div>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">Cập nhật: <span id="spo2Time">--</span></small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <main>
+    <div id="view-main" class="view active">
+      <div class="grid">
+        <div class="card">
+          <span class="card-label">Nhịp Tim (BPM)</span>
+          <div id="bpm" class="card-val" style="color:var(--red)">--</div>
+          <span id="bpm-badge" class="badge badge-wait">Đang chờ...</span>
         </div>
+        <div class="card">
+          <span class="card-label">Nồng độ Oxy (SpO2 %)</span>
+          <div id="spo2" class="card-val" style="color:var(--cyan)">--</div>
+        </div>
+      </div>
 
-        <!-- Bản Ghi Đo -->
-        <div id="section-records">
-            <h2 class="section-title"><i class="fas fa-clipboard-list"></i> Bản Ghi Đo Lường</h2>
-            <div class="health-card">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <h5>Tổng số bệnh nhân: <span class="badge bg-primary" id="totalPatients">0</span></h5>
-                        <small class="text-muted">Tổng số lần đo: <span id="totalRecords">0</span></small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <button class="btn btn-outline-danger btn-sm" onclick="clearAllData()">
-                            <i class="fas fa-trash"></i> Xóa tất cả
-                        </button>
-                    </div>
-                </div>
-                <div id="patientsList" style="max-height: 500px; overflow-y: auto;">
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-inbox fa-3x mb-3"></i>
-                        <p>Chưa có bệnh nhân nào</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="card">
+        <span class="card-label">📜 Lịch sử 10 lần đo gần nhất</span>
+        <div id="history-list"><div class="loader"></div></div>
+      </div>
 
-        <!-- Modal Chi Tiết Bệnh Nhân -->
-        <div class="modal fade" id="patientDetailModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-user-injured"></i> 
-                            <span id="modalPatientName">Chi Tiết Bệnh Nhân</span>
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <strong><i class="fas fa-id-card"></i> Mã BN:</strong> 
-                                <span id="modalPatientId">--</span>
-                            </div>
-                            <div class="col-md-6">
-                                <strong><i class="fas fa-phone"></i> SĐT:</strong> 
-                                <span id="modalPatientPhone">--</span>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <strong><i class="fas fa-birthday-cake"></i> Tuổi:</strong> 
-                                <span id="modalPatientAge">--</span>
-                            </div>
-                            <div class="col-md-6">
-                                <strong><i class="fas fa-venus-mars"></i> Giới tính:</strong> 
-                                <span id="modalPatientGender">--</span>
-                            </div>
-                        </div>
-                        <hr>
-                        <h6 class="mb-3">
-                            <i class="fas fa-clipboard-list"></i> 
-                            Lịch Sử Đo Lường (<span id="modalRecordCount">0</span> lần)
-                        </h6>
-                        <div class="table-responsive">
-                            <table class="table table-hover table-striped">
-                                <thead class="table-primary">
-                                    <tr>
-                                        <th>STT</th>
-                                        <th>Thời gian</th>
-                                        <th><i class="fas fa-heart text-danger"></i> Nhịp tim</th>
-                                        <th><i class="fas fa-lungs text-info"></i> SpO2</th>
-                                        <th>Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modalRecordsTable">
-                                    <tr><td colspan="5" class="text-center">Không có dữ liệu</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times"></i> Đóng
-                        </button>
-                        <button type="button" class="btn btn-danger" onclick="deletePatientRecords()">
-                            <i class="fas fa-trash"></i> Xóa bản ghi BN này
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chatbot Tư Vấn -->
-        <div id="section-chatbot">
-            <h2 class="section-title"><i class="fas fa-comments"></i> Tư Vấn Y Tế</h2>
-            <div class="chat-container">
-                <div class="chat-header">
-                    <i class="fas fa-robot"></i> Trợ Lý Y Tế AI
-                </div>
-                <div class="chat-messages" id="chatMessages">
-                    <div class="chat-message bot">
-                        <strong><i class="fas fa-robot"></i> Trợ Lý:</strong>
-                        <p>Xin chào! Tôi có thể giúp bạn tư vấn về nhịp tim và nồng độ oxy trong máu. Hãy đặt câu hỏi cho tôi!</p>
-                    </div>
-                </div>
-                <div class="chat-input-container">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="chatInput" placeholder="Nhập câu hỏi của bạn..." onkeypress="handleChatKeyPress(event)">
-                        <button class="btn btn-primary" onclick="sendMessage()">
-                            <i class="fas fa-paper-plane"></i> Gửi
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <button class="btn btn-outline btn-toggle-view" style="margin-top:12px" onclick="showPage('config')">⚙ Thiết lập thiết bị</button>
     </div>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
-    
-    <!-- Bootstrap & SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script>
-        // Cấu hình Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjRpMhIliCNHXFq3lgYthuGBscb4_8T0w",
-            authDomain: "stem-1eeac.firebaseapp.com",
-            databaseURL: "https://stem-1eeac-default-rtdb.firebaseio.com",
-            projectId: "stem-1eeac",
-            storageBucket: "stem-1eeac.firebasestorage.app",
-            messagingSenderId: "643468199526",
-            appId: "1:643468199526:web:42af14f63a8df818310fa7",
-            measurementId: "G-023Y4PBDRC"
-        };
+    <div id="view-config" class="view">
+      <div class="card">
+        <div class="card-title">Cấu hình Cloud</div>
+        <p class="card-desc">Nhập thông tin mạng mới cho ESP32. Mạch sẽ tự khởi động lại sau khi nhận lệnh.</p>
 
-        // Khởi tạo Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        <div class="field">
+          <label>Tên WiFi (SSID)</label>
+          <input type="text" id="r-ssid" placeholder="Nhập tên mạng" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Mật khẩu WiFi</label>
+          <input type="password" id="r-pass" placeholder="Nhập mật khẩu">
+        </div>
+        <div class="field">
+          <label>SĐT Nhận Cảnh Báo</label>
+          <input type="tel" id="r-phone" placeholder="Ví dụ: 09111741xxx">
+        </div>
 
-        // Biến lưu trữ
-        let currentPatient = null;
-        let patientRecords = [];
-        let lastHeartRate = 0;
-        let lastSpO2 = 0;
-
-        // Tạo mã bệnh nhân tự động
-        function generatePatientId() {
-            return 'BN' + Date.now();
-        }
-
-        // Khởi tạo
-        window.addEventListener('load', function() {
-            document.getElementById('patientId').value = generatePatientId();
-            loadRecordsFromStorage();
-            startMonitoring();
-        });
-
-        // Xử lý form bệnh nhân
-        document.getElementById('patientForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            currentPatient = {
-                id: document.getElementById('patientId').value,
-                name: document.getElementById('patientName').value,
-                age: document.getElementById('patientAge').value,
-                gender: document.getElementById('patientGender').value,
-                phone: document.getElementById('patientPhone').value,
-                createdAt: new Date().toISOString()
-            };
-
-            localStorage.setItem('currentPatient', JSON.stringify(currentPatient));
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Thành công!',
-                text: 'Thông tin bệnh nhân đã được lưu',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        });
-
-        // Reset form
-        function resetForm() {
-            document.getElementById('patientForm').reset();
-            document.getElementById('patientId').value = generatePatientId();
-            currentPatient = null;
-            localStorage.removeItem('currentPatient');
-        }
-
-        // Bắt đầu giám sát
-        function startMonitoring() {
-            // Lắng nghe ZHeartRate
-            database.ref('Devices/ZHeartRate').on('value', (snapshot) => {
-                const heartRate = snapshot.val();
-                console.log('Firebase ZHeartRate:', heartRate);
-                updateHeartRate(heartRate);
-            }, (error) => {
-                console.error('Lỗi đọc ZHeartRate:', error);
-                showFirebaseReadError('heartRateStatus', error);
-            });
-
-            // Lắng nghe ZSpO2
-            database.ref('Devices/ZSpO2').on('value', (snapshot) => {
-                const spo2 = snapshot.val();
-                console.log('Firebase ZSpO2:', spo2);
-                updateSpO2(spo2);
-            }, (error) => {
-                console.error('Lỗi đọc ZSpO2:', error);
-                showFirebaseReadError('spo2Status', error);
-            });
-        }
-
-        function showFirebaseReadError(statusElementId, error) {
-            const statusEl = document.getElementById(statusElementId);
-            if (!statusEl) return;
-
-            statusEl.textContent = 'Lỗi Firebase: ' + error.code;
-            statusEl.className = 'status-badge bg-danger';
-        }
-
-        // Cập nhật nhịp tim
-        function updateHeartRate(value) {
-            lastHeartRate = Number(value) || 0;
-            document.getElementById('heartRateValue').textContent = lastHeartRate;
-            document.getElementById('heartRateTime').textContent = new Date().toLocaleTimeString('vi-VN');
-
-            const statusEl = document.getElementById('heartRateStatus');
-            if (lastHeartRate === 0) {
-                statusEl.textContent = 'Không có tín hiệu';
-                statusEl.className = 'status-badge bg-secondary';
-            } else if (lastHeartRate < 60) {
-                statusEl.textContent = 'Thấp';
-                statusEl.className = 'status-badge bg-warning';
-            } else if (lastHeartRate >= 60 && lastHeartRate <= 100) {
-                statusEl.textContent = 'Bình thường';
-                statusEl.className = 'status-badge bg-success';
-                document.getElementById('currentHeartRate').classList.add('pulse-animation');
-            } else {
-                statusEl.textContent = 'Cao';
-                statusEl.className = 'status-badge bg-danger';
-            }
-
-            checkAndSaveRecord();
-        }
-
-        // Cập nhật SpO2
-        function updateSpO2(value) {
-            lastSpO2 = Number(value) || 0;
-            document.getElementById('spo2Value').textContent = lastSpO2;
-            document.getElementById('spo2Time').textContent = new Date().toLocaleTimeString('vi-VN');
-
-            const statusEl = document.getElementById('spo2Status');
-            if (lastSpO2 === 0) {
-                statusEl.textContent = 'Không có tín hiệu';
-                statusEl.className = 'status-badge bg-secondary';
-            } else if (lastSpO2 < 90) {
-                statusEl.textContent = 'Nguy hiểm';
-                statusEl.className = 'status-badge bg-danger';
-            } else if (lastSpO2 >= 90 && lastSpO2 < 95) {
-                statusEl.textContent = 'Thấp';
-                statusEl.className = 'status-badge bg-warning';
-            } else {
-                statusEl.textContent = 'Bình thường';
-                statusEl.className = 'status-badge bg-success';
-                document.getElementById('currentSpO2').classList.add('pulse-animation');
-            }
-
-            checkAndSaveRecord();
-        }
-
-        // Kiểm tra và lưu bản ghi
-        function checkAndSaveRecord() {
-            // Điều kiện lưu log: cả 2 giá trị đo được phải khác 0.
-            // Giá trị bất thường như SpO2 thấp vẫn là dữ liệu hợp lệ để lưu bản ghi.
-            if (lastHeartRate !== 0 && lastSpO2 !== 0) {
-                // Kiểm tra xem có phải giá trị mới không
-                const lastRecord = patientRecords[patientRecords.length - 1];
-                if (!lastRecord || 
-                    lastRecord.heartRate !== lastHeartRate || 
-                    lastRecord.spo2 !== lastSpO2) {
-                    
-                    saveRecord();
-                }
-            }
-        }
-
-        // Lưu bản ghi
-        function saveRecord() {
-            if (!currentPatient) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Chưa có thông tin bệnh nhân',
-                    text: 'Vui lòng nhập thông tin bệnh nhân trước',
-                    confirmButtonText: 'Đồng ý'
-                });
-                return;
-            }
-
-            const record = {
-                id: Date.now(),
-                patientId: currentPatient.id,
-                patientName: currentPatient.name,
-                patientAge: currentPatient.age,
-                patientGender: currentPatient.gender,
-                patientPhone: currentPatient.phone,
-                heartRate: lastHeartRate,
-                spo2: lastSpO2,
-                timestamp: new Date().toISOString(),
-                dateTime: new Date().toLocaleString('vi-VN')
-            };
-
-            patientRecords.push(record);
-            saveRecordsToStorage();
-            displayRecords();
-
-            // Hiển thị thông báo
-            showNotification('Đã lưu bản ghi mới!');
-        }
-
-        // Hiển thị bản ghi - Nhóm theo bệnh nhân
-        function displayRecords() {
-            const patientsList = document.getElementById('patientsList');
-            
-            // Nhóm bản ghi theo bệnh nhân
-            const patientGroups = {};
-            patientRecords.forEach(record => {
-                if (!patientGroups[record.patientId]) {
-                    patientGroups[record.patientId] = {
-                        info: {
-                            id: record.patientId,
-                            name: record.patientName,
-                            age: record.patientAge || '--',
-                            gender: record.patientGender || '--',
-                            phone: record.patientPhone || '--'
-                        },
-                        records: []
-                    };
-                }
-                patientGroups[record.patientId].records.push(record);
-            });
-
-            const totalPatients = Object.keys(patientGroups).length;
-            document.getElementById('totalPatients').textContent = totalPatients;
-            document.getElementById('totalRecords').textContent = patientRecords.length;
-
-            if (totalPatients === 0) {
-                patientsList.innerHTML = `
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-inbox fa-3x mb-3"></i>
-                        <p>Chưa có bệnh nhân nào</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            Object.values(patientGroups).forEach(patient => {
-                const recordCount = patient.records.length;
-                const latestRecord = patient.records[patient.records.length - 1];
-                
-                html += `
-                    <div class="patient-card" onclick="showPatientDetails('${patient.info.id}')">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <div class="patient-name">
-                                    <i class="fas fa-user-injured"></i> ${patient.info.name}
-                                </div>
-                                <div class="patient-info">
-                                    <i class="fas fa-id-card"></i> ${patient.info.id} | 
-                                    <i class="fas fa-birthday-cake"></i> ${patient.info.age} tuổi | 
-                                    <i class="fas fa-venus-mars"></i> ${patient.info.gender}
-                                </div>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <small class="text-muted">Lần đo gần nhất:</small><br>
-                                <strong><i class="fas fa-heart text-danger"></i> ${latestRecord.heartRate}</strong> bpm | 
-                                <strong><i class="fas fa-lungs text-info"></i> ${latestRecord.spo2}</strong>%
-                            </div>
-                            <div class="col-md-3 text-end">
-                                <span class="record-count">
-                                    ${recordCount} lần đo
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            patientsList.innerHTML = html;
-        }
-
-        // Hiển thị chi tiết bệnh nhân trong modal
-        function showPatientDetails(patientId) {
-            const patientData = patientRecords.filter(r => r.patientId === patientId);
-            if (patientData.length === 0) return;
-
-            const firstRecord = patientData[0];
-            
-            // Điền thông tin bệnh nhân
-            document.getElementById('modalPatientName').textContent = firstRecord.patientName;
-            document.getElementById('modalPatientId').textContent = patientId;
-            document.getElementById('modalPatientPhone').textContent = firstRecord.patientPhone || '--';
-            document.getElementById('modalPatientAge').textContent = (firstRecord.patientAge || '--') + ' tuổi';
-            document.getElementById('modalPatientGender').textContent = firstRecord.patientGender || '--';
-            document.getElementById('modalRecordCount').textContent = patientData.length;
-
-            // Tạo bảng lịch sử
-            let tableHtml = '';
-            patientData.forEach((record, index) => {
-                const hrStatus = getHeartRateStatus(record.heartRate);
-                const spo2Status = getSpO2Status(record.spo2);
-                
-                tableHtml += `
-                    <tr>
-                        <td><strong>${index + 1}</strong></td>
-                        <td>${record.dateTime}</td>
-                        <td><span class="badge ${hrStatus.class}">${record.heartRate} bpm</span></td>
-                        <td><span class="badge ${spo2Status.class}">${record.spo2}%</span></td>
-                        <td><small>${hrStatus.text} / ${spo2Status.text}</small></td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('modalRecordsTable').innerHTML = tableHtml;
-            
-            // Lưu patientId hiện tại để xóa
-            window.currentModalPatientId = patientId;
-            
-            // Hiển thị modal
-            const modal = new bootstrap.Modal(document.getElementById('patientDetailModal'));
-            modal.show();
-        }
-
-        // Lấy trạng thái nhịp tim
-        function getHeartRateStatus(hr) {
-            if (hr < 60) return { text: 'Thấp', class: 'bg-warning' };
-            if (hr >= 60 && hr <= 100) return { text: 'Bình thường', class: 'bg-success' };
-            return { text: 'Cao', class: 'bg-danger' };
-        }
-
-        // Lấy trạng thái SpO2
-        function getSpO2Status(spo2) {
-            if (spo2 >= 95) return { text: 'Bình thường', class: 'bg-success' };
-            if (spo2 >= 90) return { text: 'Thấp nhẹ', class: 'bg-warning' };
-            return { text: 'Nguy hiểm', class: 'bg-danger' };
-        }
-
-        // Xóa bản ghi của bệnh nhân
-        function deletePatientRecords() {
-            const patientId = window.currentModalPatientId;
-            if (!patientId) return;
-
-            Swal.fire({
-                title: 'Xác nhận xóa?',
-                text: "Tất cả bản ghi của bệnh nhân này sẽ bị xóa vĩnh viễn!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Xóa',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    patientRecords = patientRecords.filter(r => r.patientId !== patientId);
-                    saveRecordsToStorage();
-                    displayRecords();
-                    
-                    // Đóng modal
-                    bootstrap.Modal.getInstance(document.getElementById('patientDetailModal')).hide();
-                    
-                    Swal.fire('Đã xóa!', 'Bản ghi của bệnh nhân đã được xóa.', 'success');
-                }
-            });
-        }
-
-        // Xóa bản ghi
-        function deleteRecord(id) {
-            Swal.fire({
-                title: 'Xác nhận xóa?',
-                text: "Bản ghi này sẽ bị xóa vĩnh viễn!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Xóa',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    patientRecords = patientRecords.filter(r => r.id !== id);
-                    saveRecordsToStorage();
-                    displayRecords();
-                    Swal.fire('Đã xóa!', 'Bản ghi đã được xóa.', 'success');
-                }
-            });
-        }
-
-        // Xóa tất cả bản ghi
-        function clearAllData() {
-            Swal.fire({
-                title: 'Xác nhận xóa tất cả?',
-                text: "Tất cả bản ghi của tất cả bệnh nhân sẽ bị xóa vĩnh viễn!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Xóa tất cả',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    patientRecords = [];
-                    saveRecordsToStorage();
-                    displayRecords();
-                    Swal.fire('Đã xóa!', 'Tất cả bản ghi đã được xóa.', 'success');
-                }
-            });
-        }
-
-        // Lưu vào localStorage
-        function saveRecordsToStorage() {
-            localStorage.setItem('patientRecords', JSON.stringify(patientRecords));
-        }
-
-        // Tải từ localStorage
-        function loadRecordsFromStorage() {
-            const stored = localStorage.getItem('patientRecords');
-            if (stored) {
-                patientRecords = JSON.parse(stored);
-                displayRecords();
-            }
-
-            const storedPatient = localStorage.getItem('currentPatient');
-            if (storedPatient) {
-                currentPatient = JSON.parse(storedPatient);
-                document.getElementById('patientName').value = currentPatient.name;
-                document.getElementById('patientAge').value = currentPatient.age;
-                document.getElementById('patientGender').value = currentPatient.gender;
-                document.getElementById('patientPhone').value = currentPatient.phone;
-                document.getElementById('patientId').value = currentPatient.id;
-            }
-        }
-
-        // Chatbot - Nâng cấp với AI thông minh
-        let conversationHistory = [];
+        <button class="btn btn-primary" onclick="sendRemoteConfig()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Lưu và cập nhật
+        </button>
         
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (message === '') return;
-
-            addChatMessage(message, 'user');
-            input.value = '';
-
-            // Thêm typing indicator
-            showTypingIndicator();
-
-            setTimeout(() => {
-                const response = getSmartChatbotResponse(message);
-                removeTypingIndicator();
-                addChatMessage(response, 'bot');
-            }, 800);
-        }
-
-        function handleChatKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        function addChatMessage(message, sender) {
-            const messagesDiv = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${sender}`;
-            
-            if (sender === 'bot') {
-                messageDiv.innerHTML = `<strong><i class="fas fa-robot"></i> Trợ Lý AI:</strong><p>${message}</p>`;
-            } else {
-                messageDiv.innerHTML = `<strong><i class="fas fa-user"></i> Bạn:</strong><p>${message}</p>`;
-            }
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            // Lưu lịch sử hội thoại
-            conversationHistory.push({ sender, message, timestamp: new Date() });
-        }
-
-        function showTypingIndicator() {
-            const messagesDiv = document.getElementById('chatMessages');
-            const indicator = document.createElement('div');
-            indicator.className = 'chat-message bot typing-indicator';
-            indicator.id = 'typingIndicator';
-            indicator.innerHTML = '<span></span><span></span><span></span>';
-            messagesDiv.appendChild(indicator);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
-        }
-
-        // AI Chatbot Response - Nâng cấp thông minh hơn
-        function getSmartChatbotResponse(message) {
-            const msg = message.toLowerCase();
-            
-            // Phân tích dữ liệu bệnh nhân hiện tại
-            const context = analyzePatientContext();
-
-            // Lấy bản ghi gần nhất để phân tích
-            const latestRecord = getLatestRecord();
-
-            // ===== PHÂN TÍCH THÔNG MINH - Nhận dạng câu hỏi tương tự =====
-            
-            // Pattern 1: Hỏi về sức khỏe tổng thể hiện tại (nhiều biến thể)
-            const healthPatterns = [
-                'sức khỏe', 'sức khoẻ', 'tình trạng', 'tình hình', 'thể trạng',
-                'chỉ số', 'các chỉ số', 'kết quả đo', 'đo được', 'hiện giờ',
-                'lúc này', 'hiện nay', 'thời điểm', 'đang có'
-            ];
-            
-            const currentPatterns = [
-                'hiện tại', 'hiện giờ', 'bây giờ', 'bây h', 'giờ này',
-                'lúc này', 'hiện nay', 'hiện hành', 'đang', 'của tôi', 
-                'của em', 'của bệnh nhân', 'bn hiện tại', 'bn này'
-            ];
-
-            // Kiểm tra có hỏi về sức khỏe hiện tại không
-            const isHealthQuery = healthPatterns.some(p => msg.includes(p));
-            const isCurrentQuery = currentPatterns.some(p => msg.includes(p));
-
-            if (isHealthQuery && isCurrentQuery) {
-                return getSmartHealthAnalysis(latestRecord, context);
-            }
-
-            // Pattern 2: Hỏi riêng nhịp tim hiện tại
-            if (isCurrentQuery && (msg.includes('nhịp tim') || msg.includes('tim đập') || msg.includes('mạch'))) {
-                return getHeartRateAnalysis(lastHeartRate, context, latestRecord);
-            }
-
-            // Pattern 3: Hỏi riêng SpO2 hiện tại
-            if (isCurrentQuery && (msg.includes('oxy') || msg.includes('spo2') || msg.includes('sp02') || msg.includes('o2'))) {
-                return getSpO2Analysis(lastSpO2, context, latestRecord);
-            }
-
-            // Pattern 4: Các cách hỏi về tình trạng chung
-            const statusQueries = [
-                'ra sao', 'thế nào', 'có tốt', 'có ổn', 'có bình thường',
-                'có nguy hiểm', 'có sao không', 'có vấn đề', 'như thế nào'
-            ];
-            
-            if (statusQueries.some(q => msg.includes(q)) && !msg.includes('làm gì')) {
-                return getSmartHealthAnalysis(latestRecord, context);
-            }
-
-            // Pattern 5: So sánh với lần đo trước
-            if (msg.includes('so với') || msg.includes('hơn lần') || msg.includes('thay đổi') || 
-                msg.includes('khác lần') || msg.includes('xu hướng')) {
-                return getTrendAnalysis(latestRecord);
-            }
-
-            // Pattern 6: Đánh giá kết quả cụ thể
-            const numberMatch = msg.match(/\d+/);
-            if (numberMatch && (msg.includes('có tốt') || msg.includes('có nguy hiểm') || 
-                msg.includes('có bình thường') || msg.includes('có cao') || msg.includes('có thấp'))) {
-                const value = parseInt(numberMatch[0]);
-                if (msg.includes('tim') || msg.includes('mạch') || msg.includes('nhịp')) {
-                    return evaluateHeartRateValue(value);
-                }
-                if (msg.includes('oxy') || msg.includes('spo2') || msg.includes('o2')) {
-                    return evaluateSpO2Value(value);
-                }
-            }
-
-            // Xử lý câu hỏi về dữ liệu hiện tại (legacy - giữ lại để tương thích)
-            if (msg.includes('hiện tại') || msg.includes('bây giờ') || msg.includes('đang')) {
-                if (msg.includes('nhịp tim') || msg.includes('tim')) {
-                    return getHeartRateAnalysis(lastHeartRate, context, latestRecord);
-                }
-                if (msg.includes('oxy') || msg.includes('spo2')) {
-                    return getSpO2Analysis(lastSpO2, context, latestRecord);
-                }
-                if (msg.includes('tình trạng') || msg.includes('sức khỏe')) {
-                    return getSmartHealthAnalysis(latestRecord, context);
-                }
-            }
-
-            // Xử lý câu hỏi về bệnh nhân
-            if (msg.includes('bệnh nhân') || msg.includes('số lượng') || msg.includes('có bao nhiêu')) {
-                return getPatientStats();
-            }
-
-            // Xử lý câu hỏi về lịch sử
-            if (msg.includes('lịch sử') || msg.includes('trước đây') || msg.includes('trước')) {
-                return getHistoryAnalysis();
-            }
-
-            // Câu hỏi về nhịp tim - Chi tiết
-            if (msg.includes('nhịp tim') || msg.includes('tim') || msg.includes('heart')) {
-                return getDetailedHeartRateInfo(msg);
-            }
-
-            // Câu hỏi về SpO2 - Chi tiết
-            if (msg.includes('spo2') || msg.includes('oxy') || msg.includes('oxygen')) {
-                return getDetailedSpO2Info(msg);
-            }
-
-            // Câu hỏi về triệu chứng
-            if (msg.includes('triệu chứng') || msg.includes('dấu hiệu')) {
-                return getSymptomsInfo(msg);
-            }
-
-            // Câu hỏi về bệnh lý
-            if (msg.includes('bệnh') || msg.includes('rối loạn')) {
-                return getDiseaseInfo(msg);
-            }
-
-            // Câu hỏi về phòng ngừa/điều trị
-            if (msg.includes('làm gì') || msg.includes('xử lý') || msg.includes('điều trị') || msg.includes('phòng')) {
-                return getTreatmentAdvice(msg);
-            }
-
-            // Câu hỏi về độ tuổi
-            if (msg.includes('tuổi') || msg.includes('trẻ em') || msg.includes('người cao tuổi') || msg.includes('già')) {
-                return getAgeSpecificInfo(msg);
-            }
-
-            // Tương tác thân thiện
-            if (msg.includes('xin chào') || msg.includes('hello') || msg.includes('hi')) {
-                return '👋 Xin chào! Tôi là trợ lý AI chuyên về sức khỏe tim mạch và hô hấp. Tôi có thể:\n\n✓ Phân tích nhịp tim và SpO2 của bạn\n✓ Giải thích các chỉ số sức khỏe\n✓ Tư vấn về triệu chứng và bệnh lý\n✓ Đưa ra lời khuyên y tế cơ bản\n\nBạn muốn tìm hiểu về vấn đề gì?';
-            }
-
-            if (msg.includes('cảm ơn') || msg.includes('thank')) {
-                return '😊 Rất vui được giúp bạn! Hãy hỏi tôi bất cứ khi nào bạn cần tư vấn về sức khỏe nhé!';
-            }
-
-            // Câu hỏi không rõ ràng
-            return getSmartSuggestions(msg);
-        }
-
-        // Phân tích ngữ cảnh bệnh nhân
-        function analyzePatientContext() {
-            return {
-                hasData: lastHeartRate > 0 || lastSpO2 > 0,
-                totalRecords: patientRecords.length,
-                currentPatient: currentPatient,
-                lastHeartRate: lastHeartRate,
-                lastSpO2: lastSpO2
-            };
-        }
-
-        // LẤY BẢN GHI GẦN NHẤT
-        function getLatestRecord() {
-            if (patientRecords.length === 0) return null;
-            
-            if (currentPatient) {
-                // Lấy bản ghi gần nhất của bệnh nhân hiện tại
-                const currentPatientRecords = patientRecords.filter(r => r.patientId === currentPatient.id);
-                if (currentPatientRecords.length > 0) {
-                    return currentPatientRecords[currentPatientRecords.length - 1];
-                }
-            }
-            
-            // Nếu không có bệnh nhân hiện tại, lấy bản ghi mới nhất tổng thể
-            return patientRecords[patientRecords.length - 1];
-        }
-
-        // PHÂN TÍCH THÔNG MINH SỨC KHỎE TỔNG THỂ
-        function getSmartHealthAnalysis(latestRecord, context) {
-            let analysis = '🏥 **PHÂN TÍCH SỨC KHỎE CHI TIẾT**\n\n';
-
-            // Thông tin bệnh nhân
-            if (currentPatient) {
-                analysis += `👤 **Bệnh nhân**: ${currentPatient.name}\n`;
-                analysis += `   • Tuổi: ${currentPatient.age} | Giới tính: ${currentPatient.gender}\n`;
-                analysis += `   • Mã BN: ${currentPatient.id}\n\n`;
-            }
-
-            // Nếu có dữ liệu realtime
-            if (lastHeartRate > 0 || lastSpO2 > 0) {
-                analysis += '📊 **Chỉ số hiện tại** (Đang đo):\n';
-                
-                if (lastHeartRate > 0) {
-                    const hrStatus = getHeartRateStatus(lastHeartRate);
-                    analysis += `   💓 Nhịp tim: **${lastHeartRate} bpm** - ${hrStatus.text}\n`;
-                    if (hrStatus.class === 'bg-danger') {
-                        analysis += `      🚨 CẦN QUAN TÂM!\n`;
-                    } else if (hrStatus.class === 'bg-success') {
-                        analysis += `      ✅ Tốt\n`;
-                    }
-                }
-                
-                if (lastSpO2 > 0) {
-                    const spo2Status = getSpO2Status(lastSpO2);
-                    analysis += `   🫁 SpO2: **${lastSpO2}%** - ${spo2Status.text}\n`;
-                    if (spo2Status.class === 'bg-danger') {
-                        analysis += `      🚨 NGUY HIỂM - CẦN THEO DÕI!\n`;
-                    } else if (spo2Status.class === 'bg-success') {
-                        analysis += `      ✅ Tốt\n`;
-                    }
-                }
-                analysis += '\n';
-            }
-
-            // Nếu có bản ghi gần nhất
-            if (latestRecord) {
-                const timeDiff = new Date() - new Date(latestRecord.timestamp);
-                const minutesAgo = Math.floor(timeDiff / 60000);
-                const timeStr = minutesAgo < 1 ? 'vừa xong' : 
-                               minutesAgo < 60 ? `${minutesAgo} phút trước` :
-                               `${Math.floor(minutesAgo/60)} giờ trước`;
-
-                analysis += `📝 **Lần đo gần nhất** (${timeStr}):\n`;
-                analysis += `   • Thời gian: ${latestRecord.dateTime}\n`;
-                
-                const hrStatus = getHeartRateStatus(latestRecord.heartRate);
-                const spo2Status = getSpO2Status(latestRecord.spo2);
-                
-                analysis += `   • Nhịp tim: **${latestRecord.heartRate} bpm** (${hrStatus.text})\n`;
-                analysis += `   • SpO2: **${latestRecord.spo2}%** (${spo2Status.text})\n\n`;
-            }
-
-            // Đánh giá tổng quan
-            analysis += '📋 **ĐÁNH GIÁ TỔNG QUAN**:\n';
-            
-            const hr = lastHeartRate > 0 ? lastHeartRate : (latestRecord ? latestRecord.heartRate : 0);
-            const spo2 = lastSpO2 > 0 ? lastSpO2 : (latestRecord ? latestRecord.spo2 : 0);
-
-            if (hr === 0 && spo2 === 0) {
-                analysis += '⚠️ Chưa có dữ liệu đo. Vui lòng đặt tay lên thiết bị.\n';
-            } else {
-                // Phân tích nhịp tim
-                if (hr > 0) {
-                    if (hr < 40) {
-                        analysis += '🚨 **Nhịp tim RẤT THẤP** - Cần cấp cứu ngay!\n';
-                    } else if (hr < 60) {
-                        analysis += '⚠️ Nhịp tim thấp - Bình thường nếu là vận động viên, nếu không hãy kiểm tra thêm.\n';
-                    } else if (hr <= 100) {
-                        analysis += '✅ Nhịp tim trong giới hạn bình thường.\n';
-                    } else if (hr <= 120) {
-                        analysis += '⚠️ Nhịp tim hơi cao - Có thể do căng thẳng, vận động, hoặc cà phê.\n';
-                    } else {
-                        analysis += '🚨 **Nhịp tim CAO** - Nên nghỉ ngơi và theo dõi. Nếu kéo dài, đi khám!\n';
-                    }
-                }
-
-                // Phân tích SpO2
-                if (spo2 > 0) {
-                    if (spo2 < 85) {
-                        analysis += '🚨 **SpO2 CỰC KỲ THẤP** - GỌI CẤP CỨU 115 NGAY!\n';
-                    } else if (spo2 < 90) {
-                        analysis += '🚨 **SpO2 THẤP** - Cần can thiệp y tế, đến bệnh viện!\n';
-                    } else if (spo2 < 95) {
-                        analysis += '⚠️ SpO2 hơi thấp - Theo dõi chặt chẽ, nếu có triệu chứng khó thở hãy gặp bác sĩ.\n';
-                    } else {
-                        analysis += '✅ SpO2 tốt - Máu được cung cấp oxy đầy đủ.\n';
-                    }
-                }
-
-                // Tổng hợp
-                analysis += '\n💡 **KẾT LUẬN**: ';
-                if ((hr >= 60 && hr <= 100) && (spo2 >= 95)) {
-                    analysis += 'Các chỉ số sinh tồn đều BẦN THƯỜNG TỐT. Hãy duy trì lối sống lành mạnh! 💪';
-                } else if ((hr < 60 || hr > 100) && (spo2 >= 95)) {
-                    analysis += 'Nhịp tim bất thường nhưng SpO2 tốt. Theo dõi thêm và tư vấn bác sĩ nếu có triệu chứng.';
-                } else if ((hr >= 60 && hr <= 100) && (spo2 < 95)) {
-                    analysis += 'Nhịp tim bình thường nhưng SpO2 thấp. Cần kiểm tra hệ hô hấp.';
-                } else if (hr > 120 || spo2 < 90) {
-                    analysis += 'CÓ CHỈ SỐ BẤT THƯỜNG NGHIÊM TRỌNG! Nên gặp bác sĩ ngay.';
-                } else {
-                    analysis += 'Có một số chỉ số chưa tối ưu. Theo dõi và tư vấn bác sĩ.';
-                }
-            }
-
-            // Lời khuyên
-            if (context.totalRecords > 0) {
-                analysis += `\n\n📊 Đã có **${context.totalRecords} lần đo** được ghi nhận.`;
-                analysis += `\n💡 Bạn có thể hỏi tôi: "Xu hướng thay đổi?" hoặc "Lịch sử đo?"`;
-            }
-
-            return analysis;
-        }
-
-        // PHÂN TÍCH XU HƯỚNG
-        function getTrendAnalysis(latestRecord) {
-            if (patientRecords.length < 2) {
-                return '📊 Cần ít nhất 2 lần đo để phân tích xu hướng. Hiện tại chỉ có ' + patientRecords.length + ' bản ghi.';
-            }
-
-            let records = patientRecords;
-            if (currentPatient) {
-                records = patientRecords.filter(r => r.patientId === currentPatient.id);
-            }
-
-            if (records.length < 2) {
-                return '📊 Bệnh nhân hiện tại cần ít nhất 2 lần đo để phân tích xu hướng.';
-            }
-
-            const latest = records[records.length - 1];
-            const previous = records[records.length - 2];
-            const older = records.length >= 3 ? records[records.length - 3] : null;
-
-            let analysis = '📈 **PHÂN TÍCH XU HƯỚNG THAY ĐỔI**\n\n';
-
-            // So sánh với lần trước
-            const hrChange = latest.heartRate - previous.heartRate;
-            const spo2Change = latest.spo2 - previous.spo2;
-
-            analysis += '🔄 **So với lần đo trước**:\n';
-            analysis += `   💓 Nhịp tim: ${previous.heartRate} → **${latest.heartRate} bpm** `;
-            if (hrChange > 0) {
-                analysis += `(📈 Tăng ${hrChange} bpm)\n`;
-            } else if (hrChange < 0) {
-                analysis += `(📉 Giảm ${Math.abs(hrChange)} bpm)\n`;
-            } else {
-                analysis += `(➡️ Không đổi)\n`;
-            }
-
-            analysis += `   🫁 SpO2: ${previous.spo2}% → **${latest.spo2}%** `;
-            if (spo2Change > 0) {
-                analysis += `(📈 Tăng ${spo2Change}%)\n`;
-            } else if (spo2Change < 0) {
-                analysis += `(📉 Giảm ${Math.abs(spo2Change)}%)\n`;
-            } else {
-                analysis += `(➡️ Không đổi)\n`;
-            }
-
-            // Xu hướng 3 lần đo gần nhất
-            if (older) {
-                analysis += '\n📊 **Xu hướng 3 lần gần nhất**:\n';
-                
-                const hr1 = older.heartRate;
-                const hr2 = previous.heartRate;
-                const hr3 = latest.heartRate;
-                
-                if (hr1 < hr2 && hr2 < hr3) {
-                    analysis += '   💓 Nhịp tim: Xu hướng TĂNG dần ⬆️⬆️\n';
-                } else if (hr1 > hr2 && hr2 > hr3) {
-                    analysis += '   💓 Nhịp tim: Xu hướng GIẢM dần ⬇️⬇️\n';
-                } else {
-                    analysis += '   💓 Nhịp tim: Dao động không đều ↕️\n';
-                }
-
-                const sp1 = older.spo2;
-                const sp2 = previous.spo2;
-                const sp3 = latest.spo2;
-                
-                if (sp1 < sp2 && sp2 < sp3) {
-                    analysis += '   🫁 SpO2: Xu hướng TĂNG dần ⬆️⬆️\n';
-                } else if (sp1 > sp2 && sp2 > sp3) {
-                    analysis += '   🫁 SpO2: Xu hướng GIẢM dần ⬇️⬇️\n';
-                } else {
-                    analysis += '   🫁 SpO2: Dao động không đều ↕️\n';
-                }
-            }
-
-            // Đánh giá
-            analysis += '\n💡 **NHẬN XÉT**:\n';
-            
-            if (Math.abs(hrChange) <= 5 && Math.abs(spo2Change) <= 2) {
-                analysis += '✅ Các chỉ số khá ổn định, thay đổi trong giới hạn bình thường.\n';
-            } else {
-                if (Math.abs(hrChange) > 10) {
-                    analysis += `⚠️ Nhịp tim thay đổi đáng kể (${Math.abs(hrChange)} bpm). `;
-                    if (hrChange > 0) {
-                        analysis += 'Có thể do căng thẳng, vận động, hoặc các yếu tố khác.\n';
-                    } else {
-                        analysis += 'Nếu giảm quá nhiều và có triệu chứng, nên kiểm tra.\n';
-                    }
-                }
-                
-                if (Math.abs(spo2Change) > 3) {
-                    analysis += `⚠️ SpO2 thay đổi đáng kể (${Math.abs(spo2Change)}%). `;
-                    if (spo2Change < 0) {
-                        analysis += 'Cần theo dõi chặt chẽ nếu giảm tiếp.\n';
-                    } else {
-                        analysis += 'Xu hướng tích cực!\n';
-                    }
-                }
-            }
-
-            const avgHR = records.slice(-5).reduce((sum, r) => sum + r.heartRate, 0) / Math.min(5, records.length);
-            const avgSpO2 = records.slice(-5).reduce((sum, r) => sum + r.spo2, 0) / Math.min(5, records.length);
-            
-            analysis += `\n📊 **Trung bình 5 lần gần nhất**:\n`;
-            analysis += `   • Nhịp tim: ${avgHR.toFixed(1)} bpm\n`;
-            analysis += `   • SpO2: ${avgSpO2.toFixed(1)}%\n`;
-
-            return analysis;
-        }
-
-        // ĐÁNH GIÁ GIÁ TRỊ CỤ THỂ
-        function evaluateHeartRateValue(value) {
-            let response = `💓 **Nhịp tim ${value} bpm**:\n\n`;
-            
-            if (value < 40) {
-                response += '🚨 **CỰC KỲ THẤP - NGUY HIỂM!**\n';
-                response += 'Nhịp tim dưới 40 bpm là bất thường nghiêm trọng!\n';
-                response += '⚠️ CẦN CẤP CỨU NGAY - GỌI 115!';
-            } else if (value < 50) {
-                response += '🔴 **RẤT THẤP**\n';
-                response += 'Chỉ bình thường nếu bạn là:\n';
-                response += '• Vận động viên chuyên nghiệp\n';
-                response += '• Đang ngủ sâu\n';
-                response += '• Đang dùng thuốc tim mạch\n\n';
-                response += 'Nếu không thuộc các trường hợp trên và có triệu chứng (chóng mặt, mệt), hãy gặp bác sĩ!';
-            } else if (value < 60) {
-                response += '⚠️ **HƠI THẤP**\n';
-                response += '✅ Bình thường nếu bạn:\n';
-                response += '• Tập luyện thể thao đều đặn\n';
-                response += '• Có sức khỏe tim tốt\n';
-                response += '• Không có triệu chứng bất thường\n\n';
-                response += '⚠️ Cần kiểm tra nếu:\n';
-                response += '• Chóng mặt, ngất\n';
-                response += '• Mệt mỏi nhiều\n';
-                response += '• Khó thở';
-            } else if (value <= 100) {
-                response += '✅ **BÌNH THƯỜNG HOÀN TOÀN**\n';
-                response += 'Nhịp tim của bạn nằm trong giới hạn chuẩn (60-100 bpm).\n';
-                response += '• Tim đang hoạt động hiệu quả\n';
-                response += '• Tuần hoàn máu tốt\n';
-                response += '• Hãy duy trì lối sống lành mạnh! 💪';
-            } else if (value <= 120) {
-                response += '⚠️ **HƠI CAO**\n';
-                response += 'Có thể do:\n';
-                response += '• Vừa vận động\n';
-                response += '• Căng thẳng, lo âu\n';
-                response += '• Uống cà phê/nước tăng lực\n';
-                response += '• Sốt nhẹ\n\n';
-                response += '💡 Nghỉ ngơi 10-15 phút rồi đo lại. Nếu vẫn cao mà không rõ nguyên nhân → Gặp bác sĩ.';
-            } else if (value <= 150) {
-                response += '🔴 **CAO**\n';
-                response += 'Nhịp tim trên 120 bpm khi nghỉ ngơi là BẤT THƯỜNG.\n\n';
-                response += 'Nguyên nhân có thể:\n';
-                response += '• Sốt cao\n';
-                response += '• Mất nước nhiều\n';
-                response += '• Thiếu máu\n';
-                response += '• Bệnh tuyến giáp\n';
-                response += '• Rối loạn nhịp tim\n\n';
-                response += '⚠️ NÊN ĐI KHÁM BÁC SĨ TIM MẠCH!';
-            } else {
-                response += '🚨 **RẤT CAO - NGUY HIỂM!**\n';
-                response += 'Nhịp tim trên 150 bpm là bất thường nghiêm trọng!\n\n';
-                response += '⚠️ HÀNH ĐỘNG NGAY:\n';
-                response += '1. Ngồi hoặc nằm xuống\n';
-                response += '2. Thở sâu, thở chậm\n';
-                response += '3. Uống nước\n';
-                response += '4. Nếu không giảm sau 5-10 phút → GỌI CẤP CỨU 115!\n\n';
-                response += 'Đặc biệt nếu kèm: đau ngực, khó thở, chóng mặt!';
-            }
-
-            return response;
-        }
-
-        function evaluateSpO2Value(value) {
-            let response = `🫁 **SpO2 ${value}%**:\n\n`;
-            
-            if (value < 80) {
-                response += '🚨 **CỰC KỲ NGUY HIỂM!**\n';
-                response += 'SpO2 dưới 80% = Thiếu oxy nghiêm trọng!\n\n';
-                response += '🚑 **GỌI CẤP CỨU 115 NGAY LẬP TỨC!**\n';
-                response += 'Não và các cơ quan đang thiếu oxy, nguy cơ tổn thương vĩnh viễn!';
-            } else if (value < 85) {
-                response += '🚨 **NGUY HIỂM NGHIÊM TRỌNG!**\n';
-                response += 'SpO2 dưới 85% cần CẤP CỨU!\n\n';
-                response += '⚠️ HÀNH ĐỘNG:\n';
-                response += '1. Ngồi thẳng hoặc nằm sấp\n';
-                response += '2. Mở cửa sổ, thông gió\n';
-                response += '3. Thở sâu, bình tĩnh\n';
-                response += '4. **GỌI 115 hoặc ĐẾN BV NGAY!**';
-            } else if (value < 90) {
-                response += '🔴 **THẤP - CẦN CAN THIỆP!**\n';
-                response += 'SpO2 dưới 90% = Thiếu oxy máu (Hypoxemia)\n\n';
-                response += '⚠️ Cần:\n';
-                response += '• Đến bệnh viện để kiểm tra\n';
-                response += '• Có thể cần oxy hỗ trợ\n';
-                response += '• Tìm nguyên nhân (phổi, tim, COVID...)\n\n';
-                response += '🏥 KHÔNG TỰ Ý XỬ LÝ - GẶP BÁC SĨ NGAY!';
-            } else if (value < 95) {
-                response += '⚠️ **HƠI THẤP**\n';
-                response += '✅ Có thể chấp nhận được nếu:\n';
-                response += '• Bạn có bệnh phổi mạn tính (COPD) đang điều trị\n';
-                response += '• Đang ở vùng núi cao\n';
-                response += '• Bác sĩ đã biết và theo dõi\n\n';
-                response += '⚠️ Cần theo dõi nếu:\n';
-                response += '• Giảm tiếp tục\n';
-                response += '• Có khó thở\n';
-                response += '• Mệt mỏi bất thường\n';
-                response += '• Đau ngực';
-            } else if (value <= 100) {
-                response += '✅ **BÌNH THƯỜNG - TỐT!**\n';
-                response += 'SpO2 từ 95-100% là giá trị lý tưởng!\n\n';
-                response += '💪 Điều này có nghĩa:\n';
-                response += '• Máu được cung cấp oxy ĐẦY ĐỦ\n';
-                response += '• Hệ hô hấp hoạt động TỐT\n';
-                response += '• Tuần hoàn máu hiệu quả\n';
-                response += '• Cơ thể khỏe mạnh!\n\n';
-                response += '🎯 Hãy duy trì: Tập thể dục, không hút thuốc, không khí trong lành!';
-            } else {
-                response += '⚠️ **GIÁ TRỊ BẤT THƯỜNG**\n';
-                response += 'SpO2 không thể cao hơn 100%.\n\n';
-                response += 'Có thể do:\n';
-                response += '• Máy đo lỗi\n';
-                response += '• Cách đo không đúng\n';
-                response += '• Nhiễu ánh sáng\n\n';
-                response += '💡 Vui lòng:\n';
-                response += '1. Vệ sinh đầu đo\n';
-                response += '2. Đo lại ở ngón khác\n';
-                response += '3. Tránh ánh sáng mạnh\n';
-                response += '4. Để tay ấm';
-            }
-
-            return response;
-        }
-
-        // Phân tích nhịp tim chi tiết (cập nhật)
-        function getHeartRateAnalysis(hr, context, latestRecord) {
-            if (hr === 0 && (!latestRecord || !latestRecord.heartRate)) {
-                return '⚠️ Hiện tại chưa có dữ liệu nhịp tim. Vui lòng đặt tay lên thiết bị đo để bắt đầu đo.';
-            }
-
-            const heartRate = hr > 0 ? hr : (latestRecord ? latestRecord.heartRate : 0);
-            let analysis = `💓 **Phân tích nhịp tim: ${heartRate} bpm**\n\n`;
-
-            // Thêm thông tin thời gian nếu từ bản ghi
-            if (latestRecord && hr === 0) {
-                const timeDiff = new Date() - new Date(latestRecord.timestamp);
-                const minutesAgo = Math.floor(timeDiff / 60000);
-                const timeStr = minutesAgo < 1 ? 'vừa xong' : 
-                               minutesAgo < 60 ? `${minutesAgo} phút trước` :
-                               `${Math.floor(minutesAgo/60)} giờ trước`;
-                analysis += `📝 Dữ liệu từ lần đo ${timeStr}\n\n`;
-            }
-
-            if (heartRate < 40) {
-                analysis += '🚨 **Nguy hiểm - Nhịp tim quá thấp!**\n';
-                analysis += 'Nhịp tim dưới 40 bpm có thể gây:\n';
-                analysis += '• Chóng mặt, ngất xỉu\n• Mệt mỏi cực độ\n• Thiếu oxy não\n';
-                analysis += '⚠️ **Cần cấp cứu ngay lập tức - GỌI 115!**';
-            } else if (heartRate < 60) {
-                analysis += '⚠️ **Nhịp tim thấp (Bradycardia)**\n';
-                analysis += '✅ Bình thường nếu:\n';
-                analysis += '• Bạn là vận động viên\n';
-                analysis += '• Đang ngủ\n';
-                analysis += '• Đang dùng thuốc tim mạch\n\n';
-                analysis += '⚠️ Cần kiểm tra nếu:\n';
-                analysis += '• Có triệu chứng chóng mặt, mệt\n';
-                analysis += '• Khó thở, đau ngực\n';
-                analysis += '• Không rõ nguyên nhân';
-            } else if (heartRate >= 60 && heartRate <= 100) {
-                analysis += '✅ **Nhịp tim bình thường**\n';
-                analysis += '• Trong giới hạn chuẩn (60-100 bpm)\n';
-                analysis += '• Tim đang hoạt động hiệu quả\n';
-                analysis += '• Tuần hoàn máu tốt\n';
-                analysis += '• Tiếp tục duy trì lối sống lành mạnh! 💪';
-            } else if (heartRate <= 120) {
-                analysis += '⚠️ **Nhịp tim tăng nhẹ**\n';
-                analysis += 'Có thể do:\n';
-                analysis += '• Vận động gần đây\n';
-                analysis += '• Căng thẳng, lo âu\n';
-                analysis += '• Uống caffeine/nước tăng lực\n';
-                analysis += '• Sốt nhẹ\n\n';
-                analysis += '💡 Nghỉ ngơi và quan sát. Nếu kéo dài hoặc tăng thêm → khám bác sĩ';
-            } else {
-                analysis += '🚨 **Nhịp tim cao (Tachycardia)**\n';
-                analysis += 'Nhịp tim > 120 bpm khi nghỉ là BẤT THƯỜNG!\n\n';
-                analysis += 'Nguyên nhân có thể:\n';
-                analysis += '• Sốt cao\n';
-                analysis += '• Mất nước nghiêm trọng\n';
-                analysis += '• Rối loạn nhịp tim\n';
-                analysis += '• Bệnh tuyến giáp\n';
-                analysis += '• Thiếu máu nặng\n\n';
-                analysis += '⚠️ **Nên khám bác sĩ tim mạch ngay!**';
-            }
-
-            // Thêm lời khuyên theo từng mức
-            analysis += '\n\n💡 **Lời khuyên**:\n';
-            if (heartRate >= 60 && heartRate <= 100) {
-                analysis += '• Duy trì tập thể dục 30 phút/ngày\n';
-                analysis += '• Ăn uống lành mạnh, nhiều rau củ\n';
-                analysis += '• Ngủ đủ 7-8 tiếng\n';
-                analysis += '• Giảm stress';
-            } else if (heartRate > 100) {
-                analysis += '• Nghỉ ngơi, thư giãn\n';
-                analysis += '• Uống đủ nước\n';
-                analysis += '• Tránh caffeine\n';
-                analysis += '• Theo dõi thêm, đo lại sau 15 phút\n';
-                analysis += '• Nếu kéo dài + có triệu chứng → Gặp bác sĩ';
-            } else {
-                analysis += '• Theo dõi chặt chẽ\n';
-                analysis += '• Ghi lại thời gian và triệu chứng\n';
-                analysis += '• Tham khảo bác sĩ tim mạch';
-            }
-
-            return analysis;
-        }
-
-        // Phân tích SpO2 chi tiết (cập nhật)
-        function getSpO2Analysis(spo2, context, latestRecord) {
-            if (spo2 === 0 && (!latestRecord || !latestRecord.spo2)) {
-                return '⚠️ Hiện tại chưa có dữ liệu SpO2. Vui lòng đặt tay lên thiết bị đo để bắt đầu đo.';
-            }
-
-            const oxygenLevel = spo2 > 0 ? spo2 : (latestRecord ? latestRecord.spo2 : 0);
-            let analysis = `🫁 **Phân tích nồng độ oxy (SpO2): ${oxygenLevel}%**\n\n`;
-
-            // Thêm thông tin thời gian nếu từ bản ghi
-            if (latestRecord && spo2 === 0) {
-                const timeDiff = new Date() - new Date(latestRecord.timestamp);
-                const minutesAgo = Math.floor(timeDiff / 60000);
-                const timeStr = minutesAgo < 1 ? 'vừa xong' : 
-                               minutesAgo < 60 ? `${minutesAgo} phút trước` :
-                               `${Math.floor(minutesAgo/60)} giờ trước`;
-                analysis += `📝 Dữ liệu từ lần đo ${timeStr}\n\n`;
-            }
-
-            if (oxygenLevel < 85) {
-                analysis += '🚨 **NGUY HIỂM - Thiếu oxy nghiêm trọng!**\n';
-                analysis += 'SpO2 dưới 85% là tình trạng cấp cứu:\n';
-                analysis += '• Não và các cơ quan thiếu oxy\n';
-                analysis += '• Nguy cơ tổn thương vĩnh viễn\n';
-                analysis += '• Có thể hôn mê\n\n';
-                analysis += '🚑 **GỌI CẤP CỨU NGAY LẬP TỨC - 115!**';
-            } else if (oxygenLevel < 90) {
-                analysis += '🚨 **Thiếu oxy máu (Hypoxemia)**\n';
-                analysis += 'SpO2 dưới 90% cần can thiệp y tế:\n';
-                analysis += '• Khó thở\n';
-                analysis += '• Tím môi, đầu ngón tay\n';
-                analysis += '• Lú lẫn, mệt mỏi\n';
-                analysis += '• Tim đập nhanh bù trừ\n\n';
-                analysis += '⚠️ **Đến bệnh viện hoặc gọi bác sĩ ngay!**';
-            } else if (oxygenLevel < 95) {
-                analysis += '⚠️ **Nồng độ oxy thấp hơn bình thường**\n';
-                analysis += 'SpO2 90-94% cần theo dõi:\n';
-                analysis += '✅ Có thể bình thường nếu:\n';
-                analysis += '• Bạn có bệnh phổi mạn tính đang điều trị\n';
-                analysis += '• Đang ở vùng núi cao\n';
-                analysis += '• Bác sĩ đã biết và theo dõi\n\n';
-                analysis += '⚠️ Cần gặp bác sĩ nếu:\n';
-                analysis += '• Giảm tiếp tục\n';
-                analysis += '• Có khó thở\n';
-                analysis += '• Đau ngực, mệt mỏi\n';
-                analysis += '• Không có tiền sử bệnh phổi';
-            } else if (oxygenLevel <= 100) {
-                analysis += '✅ **Nồng độ oxy bình thường**\n';
-                analysis += '• Máu được cung cấp oxy đầy đủ (95-100%)\n';
-                analysis += '• Hệ hô hấp hoạt động tốt\n';
-                analysis += '• Trao đổi khí hiệu quả\n';
-                analysis += '• Giá trị lý tưởng cho sức khỏe! 💪';
-            }
-
-            // Lời khuyên theo từng mức
-            analysis += '\n\n💡 **Lời khuyên**:\n';
-            if (oxygenLevel >= 95) {
-                analysis += '• Duy trì sức khỏe hô hấp tốt\n';
-                analysis += '• Tập thở sâu, yoga\n';
-                analysis += '• Không hút thuốc lá\n';
-                analysis += '• Tập thể dục aerobic đều đặn\n';
-                analysis += '• Không khí trong lành';
-            } else if (oxygenLevel >= 90) {
-                analysis += '• Theo dõi thường xuyên\n';
-                analysis += '• Ngồi thẳng khi thở\n';
-                analysis += '• Tập thở sâu\n';
-                analysis += '• Tham khảo bác sĩ nếu giảm thêm\n';
-                analysis += '• Tránh vận động nặng';
-            } else {
-                analysis += '• CẦN CAN THIỆP Y TẾ NGAY!\n';
-                analysis += '• Ngồi thẳng hoặc nằm sấp\n';
-                analysis += '• Thở chậm, sâu\n';
-                analysis += '• Gọi cấp cứu hoặc đến BV';
-            }
-
-            // Thông tin thêm về COVID-19 nếu SpO2 thấp
-            if (oxygenLevel < 95) {
-                analysis += '\n\n📌 **Lưu ý**: Nếu bạn đang/nghi nhiễm COVID-19:\n';
-                analysis += '• Theo dõi SpO2 4-6 lần/ngày\n';
-                analysis += '• Nằm sấp 30 phút/lần, nhiều lần/ngày\n';
-                analysis += '• Liên hệ bác sĩ/trạm y tế nếu SpO2 < 94%';
-            }
-
-            return analysis;
-        }
-
-        // Tổng hợp sức khỏe
-        function getHealthSummary(hr, spo2, context) {
-            if (hr === 0 && spo2 === 0) {
-                return '⚠️ Chưa có dữ liệu đo. Vui lòng đặt tay lên thiết bị để bắt đầu đo lường.';
-            }
-
-            let summary = '📊 **TỔNG HỢP TÌNH TRẠNG SỨC KHỎE**\n\n';
-            
-            // Nhịp tim
-            const hrStatus = hr === 0 ? 'Chưa đo' : 
-                           hr < 60 ? '⚠️ Thấp' :
-                           hr <= 100 ? '✅ Bình thường' : '⚠️ Cao';
-            summary += `💓 Nhịp tim: ${hr === 0 ? '--' : hr + ' bpm'} (${hrStatus})\n`;
-            
-            // SpO2
-            const spo2Status = spo2 === 0 ? 'Chưa đo' :
-                             spo2 < 90 ? '🚨 Nguy hiểm' :
-                             spo2 < 95 ? '⚠️ Thấp' : '✅ Bình thường';
-            summary += `🫁 SpO2: ${spo2 === 0 ? '--' : spo2 + '%'} (${spo2Status})\n\n`;
-
-            // Đánh giá tổng quan
-            if (hr >= 60 && hr <= 100 && spo2 >= 95) {
-                summary += '✅ **Kết luận**: Các chỉ số sức khỏe đều trong giới hạn bình thường. Hãy duy trì lối sống lành mạnh!';
-            } else if ((hr < 60 || hr > 100) && spo2 >= 95) {
-                summary += '⚠️ **Lưu ý**: Nhịp tim bất thường nhưng oxy máu tốt. Theo dõi thêm và tư vấn bác sĩ nếu có triệu chứng.';
-            } else if (hr >= 60 && hr <= 100 && spo2 < 95) {
-                summary += '⚠️ **Lưu ý**: Nhịp tim bình thường nhưng SpO2 thấp. Cần kiểm tra hệ hô hấp.';
-            } else {
-                summary += '🚨 **Cảnh báo**: Cả nhịp tim và SpO2 đều bất thường. Nên gặp bác sĩ để kiểm tra.';
-            }
-
-            if (context.totalRecords > 0) {
-                summary += `\n\n📈 Đã có ${context.totalRecords} lần đo được ghi nhận.`;
-            }
-
-            return summary;
-        }
-
-        // Thống kê bệnh nhân
-        function getPatientStats() {
-            const patientGroups = {};
-            patientRecords.forEach(record => {
-                if (!patientGroups[record.patientId]) {
-                    patientGroups[record.patientId] = [];
-                }
-                patientGroups[record.patientId].push(record);
-            });
-
-            const totalPatients = Object.keys(patientGroups).length;
-            
-            if (totalPatients === 0) {
-                return '📊 Hiện tại chưa có bệnh nhân nào trong hệ thống. Vui lòng nhập thông tin bệnh nhân và bắt đầu đo lường.';
-            }
-
-            let stats = `📊 **THỐNG KÊ HỆ THỐNG**\n\n`;
-            stats += `👥 Tổng số bệnh nhân: **${totalPatients}** người\n`;
-            stats += `📋 Tổng số lần đo: **${patientRecords.length}** lần\n`;
-            stats += `📈 Trung bình: **${(patientRecords.length / totalPatients).toFixed(1)}** lần/bệnh nhân\n\n`;
-
-            if (currentPatient) {
-                const currentRecords = patientRecords.filter(r => r.patientId === currentPatient.id);
-                stats += `👤 Bệnh nhân hiện tại: **${currentPatient.name}**\n`;
-                stats += `   • Đã đo: ${currentRecords.length} lần`;
-            }
-
-            return stats;
-        }
-
-        // Phân tích lịch sử
-        function getHistoryAnalysis() {
-            if (patientRecords.length === 0) {
-                return '📊 Chưa có dữ liệu lịch sử. Hãy bắt đầu đo lường để tạo hồ sơ theo dõi sức khỏe.';
-            }
-
-            const recentRecords = patientRecords.slice(-10); // 10 bản ghi gần nhất
-            const avgHR = recentRecords.reduce((sum, r) => sum + r.heartRate, 0) / recentRecords.length;
-            const avgSpO2 = recentRecords.reduce((sum, r) => sum + r.spo2, 0) / recentRecords.length;
-
-            let analysis = `📈 **PHÂN TÍCH LỊCH SỬ GẦN ĐÂY**\n\n`;
-            analysis += `📊 Dựa trên ${recentRecords.length} lần đo gần nhất:\n\n`;
-            analysis += `💓 Nhịp tim trung bình: **${avgHR.toFixed(1)}** bpm\n`;
-            analysis += `🫁 SpO2 trung bình: **${avgSpO2.toFixed(1)}**%\n\n`;
-
-            // Xu hướng
-            if (recentRecords.length >= 3) {
-                const latest = recentRecords[recentRecords.length - 1];
-                const previous = recentRecords[recentRecords.length - 3];
-                
-                const hrTrend = latest.heartRate - previous.heartRate;
-                const spo2Trend = latest.spo2 - previous.spo2;
-
-                analysis += `📊 **Xu hướng**:\n`;
-                analysis += `• Nhịp tim: ${hrTrend > 0 ? '📈 Tăng' : hrTrend < 0 ? '📉 Giảm' : '➡️ Ổn định'} (${hrTrend > 0 ? '+' : ''}${hrTrend.toFixed(0)} bpm)\n`;
-                analysis += `• SpO2: ${spo2Trend > 0 ? '📈 Tăng' : spo2Trend < 0 ? '📉 Giảm' : '➡️ Ổn định'} (${spo2Trend > 0 ? '+' : ''}${spo2Trend.toFixed(1)}%)\n`;
-            }
-
-            return analysis;
-        }
-
-        // Thông tin chi tiết về nhịp tim
-        function getDetailedHeartRateInfo(msg) {
-            if (msg.includes('bình thường') || msg.includes('chuẩn')) {
-                return '💓 **NHỊP TIM BÌNH THƯỜNG**\n\n' +
-                       '👨‍🦱 Người trưởng thành: 60-100 bpm\n' +
-                       '👶 Trẻ sơ sinh: 100-160 bpm\n' +
-                       '🧒 Trẻ em (1-10 tuổi): 70-120 bpm\n' +
-                       '🏃 Vận động viên: 40-60 bpm\n' +
-                       '👴 Người cao tuổi: 60-100 bpm\n\n' +
-                       '💡 Nhịp tim thay đổi theo hoạt động, cảm xúc, nhiệt độ, thuốc men.';
-            }
-            
-            if (msg.includes('cao') || msg.includes('nhanh') || msg.includes('tăng')) {
-                return '🔺 **NHỊP TIM CAO (Tachycardia)**\n\n' +
-                       '**Nguyên nhân thường gặp:**\n' +
-                       '• Căng thẳng, lo âu, sợ hãi\n' +
-                       '• Vận động mạnh\n' +
-                       '• Sốt, nhiễm trùng\n' +
-                       '• Thiếu nước, mất máu\n' +
-                       '• Caffeine, thuốc kích thích\n' +
-                       '• Cường giáp\n' +
-                       '• Bệnh tim: rối loạn nhịp, suy tim\n\n' +
-                       '⚠️ **Khi nào gặp bác sĩ?**\n' +
-                       '• Nhịp tim > 120 bpm khi nghỉ\n' +
-                       '• Kèm đau ngực, khó thở\n' +
-                       '• Chóng mặt, ngất\n' +
-                       '• Kéo dài không rõ nguyên nhân';
-            }
-            
-            if (msg.includes('thấp') || msg.includes('chậm') || msg.includes('giảm')) {
-                return '🔻 **NHỊP TIM THẤP (Bradycardia)**\n\n' +
-                       '**Nguyên nhân:**\n' +
-                       '• Vận động viên (bình thường)\n' +
-                       '• Thuốc tim mạch (beta-blocker)\n' +
-                       '• Suy giáp\n' +
-                       '• Rối loạn dẫn truyền tim\n' +
-                       '• Tuổi già\n\n' +
-                       '✅ **Khi nào bình thường?**\n' +
-                       '• Vận động viên: 40-60 bpm OK\n' +
-                       '• Ngủ: giảm 10-20 bpm OK\n\n' +
-                       '⚠️ **Khi nào nguy hiểm?**\n' +
-                       '• < 40 bpm kèm triệu chứng\n' +
-                       '• Chóng mặt, mệt mỏi\n' +
-                       '• Khó thở, đau ngực\n' +
-                       '• Ngất xỉu';
-            }
-
-            return '💓 **VỀ NHỊP TIM**\n\n' +
-                   'Nhịp tim là số lần tim đập mỗi phút, phản ánh sức khỏe tim mạch.\n\n' +
-                   '📊 **Phân loại:**\n' +
-                   '• Bình thường: 60-100 bpm\n' +
-                   '• Thấp (Bradycardia): < 60 bpm\n' +
-                   '• Cao (Tachycardia): > 100 bpm\n\n' +
-                   '💡 Bạn muốn biết cụ thể về nhịp tim cao, thấp hay bình thường?';
-        }
-
-        // Thông tin chi tiết về SpO2
-        function getDetailedSpO2Info(msg) {
-            if (msg.includes('bình thường') || msg.includes('chuẩn')) {
-                return '🫁 **SPO2 BÌNH THƯỜNG**\n\n' +
-                       '✅ Người khỏe mạnh: **95-100%**\n' +
-                       '⚠️ Người bệnh phổi mạn: **88-92%** (dưới giám sát bác sĩ)\n\n' +
-                       '**Ý nghĩa:**\n' +
-                       '• 95-100%: Máu được cung cấp oxy đầy đủ\n' +
-                       '• Hemoglobin mang oxy hiệu quả\n' +
-                       '• Hệ hô hấp và tuần hoàn hoạt động tốt';
-            }
-            
-            if (msg.includes('thấp') || msg.includes('giảm')) {
-                return '🔻 **SPO2 THẤP (Hypoxemia)**\n\n' +
-                       '**Phân loại:**\n' +
-                       '🟢 90-94%: Thấp nhẹ - Theo dõi\n' +
-                       '🟡 85-89%: Trung bình - Cần oxy\n' +
-                       '🔴 < 85%: Nghiêm trọng - Cấp cứu!\n\n' +
-                       '**Nguyên nhân:**\n' +
-                       '• Bệnh phổi: Hen, COPD, viêm phổi\n' +
-                       '• COVID-19\n' +
-                       '• Suy tim\n' +
-                       '• Thiếu máu nặng\n' +
-                       '• Ở độ cao (núi)\n' +
-                       '• Ngưng thở khi ngủ\n\n' +
-                       '**Triệu chứng:**\n' +
-                       '• Khó thở, thở nhanh\n' +
-                       '• Tím môi, đầu ngón tay\n' +
-                       '• Lú lẫn, đau đầu\n' +
-                       '• Nhịp tim nhanh\n\n' +
-                       '🚨 **< 90% = Đi bệnh viện ngay!**';
-            }
-            
-            if (msg.includes('đo') || msg.includes('cách')) {
-                return '📱 **CÁCH ĐO SPO2 CHÍNH XÁC**\n\n' +
-                       '**Chuẩn bị:**\n' +
-                       '1. Ngồi yên 5-10 phút\n' +
-                       '2. Tay ấm (nếu lạnh, rửa nước ấm)\n' +
-                       '3. Tháo sơn móng tay\n' +
-                       '4. Móng tay sạch\n\n' +
-                       '**Đo:**\n' +
-                       '1. Gắn máy vào ngón trỏ/giữa\n' +
-                       '2. Để yên, thở bình thường\n' +
-                       '3. Đợi 30-60 giây ổn định\n' +
-                       '4. Ghi kết quả\n\n' +
-                       '**Lưu ý:**\n' +
-                       '❌ Không đo khi:\n' +
-                       '• Vừa vận động\n' +
-                       '• Tay lạnh\n' +
-                       '• Móng dài/giả\n' +
-                       '• Ánh sáng mạnh chiếu trực tiếp\n\n' +
-                       '💡 Đo nhiều lần, lấy trung bình để chính xác hơn.';
-            }
-
-            return '🫁 **VỀ SPO2 (Độ bão hòa oxy)**\n\n' +
-                   'SpO2 đo lượng oxy trong máu qua da, không cần lấy máu.\n\n' +
-                   '📊 **Giá trị:**\n' +
-                   '• Bình thường: 95-100%\n' +
-                   '• Cảnh báo: 90-94%\n' +
-                   '• Nguy hiểm: < 90%\n\n' +
-                   '💡 Bạn muốn biết về SpO2 thấp, cách đo, hay ý nghĩa?';
-        }
-
-        // Thông tin về triệu chứng
-        function getSymptomsInfo(msg) {
-            if (msg.includes('đau ngực') || msg.includes('tim đau')) {
-                return '⚠️ **ĐAU NGỰC**\n\n' +
-                       '🚨 **Nguy hiểm - Có thể là nhồi máu cơ tim:**\n' +
-                       '• Đau ngực trái, lan ra vai/cánh tay/hàm\n' +
-                       '• Đau như bị ép, nặng nề\n' +
-                       '• Kèm đổ mồ hôi lạnh, buồn nôn\n' +
-                       '• Khó thở, chóng mặt\n' +
-                       '→ **GỌI 115 NGAY!**\n\n' +
-                       '⚠️ **Cần khám:**\n' +
-                       '• Đau khi vận động, hết khi nghỉ\n' +
-                       '• Đau kéo dài > 5 phút\n' +
-                       '• Đau đi kèm tim đập nhanh bất thường';
-            }
-            
-            if (msg.includes('khó thở') || msg.includes('thở')) {
-                return '😮‍💨 **KHÓ THỞ**\n\n' +
-                       '**Mức độ:**\n' +
-                       '🟢 Nhẹ: Khó thở khi gắng sức\n' +
-                       '🟡 Trung bình: Khó thở khi đi bộ\n' +
-                       '🔴 Nặng: Khó thở khi nghỉ\n\n' +
-                       '**Nguyên nhân:**\n' +
-                       '• Hen phế quản\n' +
-                       '• Viêm phổi\n' +
-                       '• Suy tim\n' +
-                       '• COVID-19\n' +
-                       '• Lo âu, hoảng loạn\n\n' +
-                       '🚨 **Đến bệnh viện ngay nếu:**\n' +
-                       '• SpO2 < 90%\n' +
-                       '• Tím môi\n' +
-                       '• Không nói được câu hoàn chỉnh\n' +
-                       '• Đau ngực kèm theo';
-            }
-            
-            if (msg.includes('chóng mặt') || msg.includes('hoa mắt')) {
-                return '😵 **CHÓNG MẶT**\n\n' +
-                       '**Liên quan tim mạch:**\n' +
-                       '• Nhịp tim quá thấp (< 40)\n' +
-                       '• Nhịp tim quá cao (> 150)\n' +
-                       '• Huyết áp thấp đột ngột\n' +
-                       '• Rối loạn nhịp tim\n\n' +
-                       '**Liên quan hô hấp:**\n' +
-                       '• SpO2 thấp (thiếu oxy não)\n' +
-                       '• Thở quá nhanh (tăng thông khí)\n\n' +
-                       '⚠️ **Cần cấp cứu nếu:**\n' +
-                       '• Chóng mặt + ngất\n' +
-                       '• + đau ngực\n' +
-                       '• + khó thở\n' +
-                       '• + tim đập loạn\n\n' +
-                       '💡 Ngồi/nằm ngay, uống nước, đo nhịp tim và SpO2.';
-            }
-
-            return '🩺 **TRIỆU CHỨNG CẦN LƯU Ý**\n\n' +
-                   '⚠️ Các dấu hiệu nguy hiểm:\n' +
-                   '• Đau ngực\n' +
-                   '• Khó thở\n' +
-                   '• Chóng mặt/ngất\n' +
-                   '• Tim đập loạn\n' +
-                   '• Tím môi\n\n' +
-                   '💡 Bạn đang gặp triệu chứng gì? Hãy nói cụ thể để tôi tư vấn!';
-        }
-
-        // Thông tin về bệnh lý
-        function getDiseaseInfo(msg) {
-            if (msg.includes('covid') || msg.includes('corona')) {
-                return '😷 **COVID-19 VÀ THEO DÕI SỨC KHỎE**\n\n' +
-                       '📊 **Chỉ số quan trọng:**\n' +
-                       '• SpO2: Theo dõi 4-6 lần/ngày\n' +
-                       '• Nhịp tim: Có thể tăng khi sốt\n\n' +
-                       '🚨 **Báo động đỏ:**\n' +
-                       '• SpO2 < 94%\n' +
-                       '• Nhịp tim nghỉ > 120 bpm\n' +
-                       '• Khó thở tăng dần\n' +
-                       '• Sốt cao > 39°C\n' +
-                       '→ GỌI NGAY: 115 hoặc đường dây nóng COVID\n\n' +
-                       '💊 **Chăm sóc tại nhà:**\n' +
-                       '• Nghỉ ngơi nhiều\n' +
-                       '• Uống đủ nước\n' +
-                       '• Nằm sấp (nếu SpO2 giảm)\n' +
-                       '• Theo dõi SpO2 thường xuyên';
-            }
-            
-            if (msg.includes('hen') || msg.includes('asthma')) {
-                return '🫁 **HEN PHẾ QUẢN**\n\n' +
-                       '**Đặc điểm:**\n' +
-                       '• Khó thở, thở khò khè\n' +
-                       '• Tức ngực\n' +
-                       '• Ho (đặc biệt ban đêm)\n\n' +
-                       '📊 **Theo dõi:**\n' +
-                       '• SpO2: Nên ≥ 95%\n' +
-                       '• Nhịp tim: Có thể tăng khi cơn hen\n\n' +
-                       '⚠️ **Cơn hen nặng:**\n' +
-                       '• SpO2 < 90%\n' +
-                       '• Không nói được câu\n' +
-                       '• Thuốc xịt không đỡ\n' +
-                       '→ Cấp cứu ngay!\n\n' +
-                       '💡 **Phòng ngừa:**\n' +
-                       '• Tránh allergen (phấn hoa, bụi)\n' +
-                       '• Không hút thuốc\n' +
-                       '• Dùng thuốc đều đặn\n' +
-                       '• Có sẵn thuốc cấp cứu';
-            }
-
-            if (msg.includes('cao huyết áp') || msg.includes('huyết áp cao')) {
-                return '🩺 **CAO HUYẾT ÁP (Tăng huyết áp)**\n\n' +
-                       '**Liên quan nhịp tim:**\n' +
-                       '• Huyết áp cao → Tim phải đập mạnh hơn\n' +
-                       '• Có thể gây nhịp tim cao\n' +
-                       '• Nguy cơ rối loạn nhịp\n\n' +
-                       '📊 **Giá trị huyết áp:**\n' +
-                       '• Bình thường: < 120/80 mmHg\n' +
-                       '• Cao: ≥ 140/90 mmHg\n\n' +
-                       '💊 **Quản lý:**\n' +
-                       '• Thuốc hạ áp đều đặn\n' +
-                       '• Hạn chế muối (< 5g/ngày)\n' +
-                       '• Tập thể dục đều đặn\n' +
-                       '• Giảm cân nếu thừa cân\n' +
-                       '• Giảm stress\n\n' +
-                       '⚠️ Một số thuốc hạ áp làm giảm nhịp tim - điều này là bình thường!';
-            }
-
-            return '🏥 **CÁC BỆNH LÝ TIM MẠCH - HÔ HẤP**\n\n' +
-                   'Tôi có thể tư vấn về:\n' +
-                   '• COVID-19\n' +
-                   '• Hen phế quản\n' +
-                   '• Cao huyết áp\n' +
-                   '• COPD (phổi tắc nghẽn mạn)\n' +
-                   '• Suy tim\n' +
-                   '• Rối loạn nhịp tim\n\n' +
-                   '💡 Bạn muốn hỏi về bệnh nào?';
-        }
-
-        // Lời khuyên điều trị
-        function getTreatmentAdvice(msg) {
-            if (msg.includes('tập thể dục') || msg.includes('vận động')) {
-                return '🏃 **TẬP THỂ DỤC CHO TIM MẠCH**\n\n' +
-                       '**Lợi ích:**\n' +
-                       '• Giảm nhịp tim nghỉ\n' +
-                       '• Tăng cường tim\n' +
-                       '• Cải thiện tuần hoàn\n' +
-                       '• Giảm huyết áp\n' +
-                       '• Tăng dung lượng phổi\n\n' +
-                       '📋 **Khuyến nghị:**\n' +
-                       '• 150 phút/tuần cường độ vừa\n' +
-                       '• Hoặc 75 phút/tuần cường độ cao\n' +
-                       '• Chia nhỏ: 30 phút x 5 ngày/tuần\n\n' +
-                       '💪 **Bài tập tốt:**\n' +
-                       '• Đi bộ nhanh\n' +
-                       '• Chạy bộ\n' +
-                       '• Bơi lội\n' +
-                       '• Đạp xe\n' +
-                       '• Aerobic\n\n' +
-                       '⚠️ **An toàn:**\n' +
-                       '• Khởi động 5-10 phút\n' +
-                       '• Tăng dần cường độ\n' +
-                       '• Nhịp tim tập = (220 - tuổi) x 60-80%\n' +
-                       '• Nghỉ nếu đau ngực, chóng mặt';
-            }
-            
-            if (msg.includes('ăn uống') || msg.includes('chế độ ăn') || msg.includes('dinh dưỡng')) {
-                return '🥗 **CHẾ ĐỘ ĂN UỐNG CHO TIM MẠCH**\n\n' +
-                       '✅ **NÊN ĂN:**\n' +
-                       '• Rau xanh, trái cây\n' +
-                       '• Ngũ cốc nguyên hạt\n' +
-                       '• Cá (salmon, cá thu - omega-3)\n' +
-                       '• Các loại hạt (óc chó, hạnh nhân)\n' +
-                       '• Dầu oliu\n' +
-                       '• Sữa ít béo\n\n' +
-                       '❌ **HẠN CHẾ:**\n' +
-                       '• Muối (< 5g/ngày)\n' +
-                       '• Chất béo bão hòa\n' +
-                       '• Thực phẩm chế biến sẵn\n' +
-                       '• Đồ ngọt\n' +
-                       '• Rượu bia\n' +
-                       '• Thức ăn chiên rán\n\n' +
-                       '💡 **Lưu ý:**\n' +
-                       '• Ăn nhiều bữa nhỏ\n' +
-                       '• Uống đủ 2L nước/ngày\n' +
-                       '• Hạn chế caffeine nếu nhịp tim cao';
-            }
-
-            if (msg.includes('thuốc') || msg.includes('dùng gì')) {
-                return '💊 **VỀ THUỐC MEN**\n\n' +
-                       '⚠️ **LƯU Ý QUAN TRỌNG:**\n' +
-                       'Tôi chỉ cung cấp thông tin tham khảo. \n' +
-                       '**KHÔNG TỰ Ý DÙNG THUỐC!**\n' +
-                       '**Luôn tham khảo bác sĩ trước khi dùng bất kỳ thuốc nào.**\n\n' +
-                       '📋 **Các nhóm thuốc tim mạch phổ biến:**\n' +
-                       '• Beta-blocker: Giảm nhịp tim, hạ áp\n' +
-                       '• ACE inhibitor: Hạ áp, bảo vệ tim\n' +
-                       '• Statin: Giảm cholesterol\n' +
-                       '• Aspirin: Chống đông máu\n' +
-                       '• Thuốc lợi tiểu: Giảm thể tích máu\n\n' +
-                       '🏥 **Khi nào cần gặp bác sĩ:**\n' +
-                       '• Các triệu chứng kéo dài\n' +
-                       '• Muốn điều chỉnh thuốc\n' +
-                       '• Có tác dụng phụ\n' +
-                       '• Cần kê đơn mới';
-            }
-
-            return '🩺 **CÁCH CẢI THIỆN SỨC KHỎE TIM MẠCH**\n\n' +
-                   '1️⃣ **Tập thể dục** đều đặn 30 phút/ngày\n' +
-                   '2️⃣ **Ăn uống** lành mạnh, nhiều rau củ\n' +
-                   '3️⃣ **Ngủ đủ** 7-8 tiếng/đêm\n' +
-                   '4️⃣ **Giảm stress** - Yoga, thiền, thư giãn\n' +
-                   '5️⃣ **Không hút thuốc**, hạn chế rượu\n' +
-                   '6️⃣ **Kiểm tra** sức khỏe định kỳ\n' +
-                   '7️⃣ **Theo dõi** nhịp tim, huyết áp, SpO2\n\n' +
-                   '💡 Bạn muốn biết cụ thể về tập thể dục, ăn uống, hay thuốc men?';
-        }
-
-        // Thông tin theo độ tuổi
-        function getAgeSpecificInfo(msg) {
-            if (msg.includes('trẻ em') || msg.includes('trẻ nhỏ')) {
-                return '👶 **TRẺ EM**\n\n' +
-                       '**Nhịp tim bình thường:**\n' +
-                       '• Sơ sinh: 100-160 bpm\n' +
-                       '• 1-2 tuổi: 90-150 bpm\n' +
-                       '• 3-5 tuổi: 80-140 bpm\n' +
-                       '• 6-12 tuổi: 70-120 bpm\n' +
-                       '• Vị thành niên: 60-100 bpm\n\n' +
-                       '**SpO2:** ≥ 95% (giống người lớn)\n\n' +
-                       '⚠️ **Lưu ý:**\n' +
-                       '• Trẻ em có nhịp tim cao hơn người lớn\n' +
-                       '• Thay đổi nhanh theo hoạt động\n' +
-                       '• Dễ mất nước → nhịp tim tăng\n' +
-                       '• Sốt làm tăng 10 bpm/1°C';
-            }
-            
-            if (msg.includes('người cao tuổi') || msg.includes('già') || msg.includes('lớn tuổi')) {
-                return '👴 **NGƯỜI CAO TUỔI**\n\n' +
-                       '**Nhịp tim:**\n' +
-                       '• Bình thường: 60-100 bpm (như người trưởng thành)\n' +
-                       '• Nhịp tim tối đa giảm: 220 - tuổi\n' +
-                       '• Có thể có nhịp tim nghỉ thấp hơn\n\n' +
-                       '**SpO2:**\n' +
-                       '• Mục tiêu: ≥ 95%\n' +
-                       '• 92-94% có thể chấp nhận được nếu ổn định\n\n' +
-                       '⚠️ **Đặc điểm:**\n' +
-                       '• Rối loạn nhịp tim phổ biến hơn\n' +
-                       '• Đáp ứng tim chậm hơn với vận động\n' +
-                       '• Dễ hạ huyết áp tư thế\n' +
-                       '• Thường có bệnh mạn tính\n\n' +
-                       '💡 **Khuyến nghị:**\n' +
-                       '• Kiểm tra sức khỏe 6 tháng/lần\n' +
-                       '• Tập nhẹ nhàng, đều đặn\n' +
-                       '• Theo dõi nhịp tim, huyết áp thường xuyên\n' +
-                       '• Uống thuốc đúng giờ';
-            }
-
-            return '👥 **NHỊP TIM THEO TUỔI**\n\n' +
-                   '👶 Trẻ sơ sinh: 100-160 bpm\n' +
-                   '🧒 Trẻ em (1-10t): 70-120 bpm\n' +
-                   '🧑 Thanh thiếu niên: 60-100 bpm\n' +
-                   '👨 Người trưởng thành: 60-100 bpm\n' +
-                   '👴 Người cao tuổi: 60-100 bpm\n' +
-                   '🏃 Vận động viên: 40-60 bpm\n\n' +
-                   '💡 Bạn muốn biết cụ thể về độ tuổi nào?';
-        }
-
-        // Gợi ý thông minh
-        function getSmartSuggestions(msg) {
-            return '🤔 Tôi có thể giúp bạn về:\n\n' +
-                   '📊 **Phân tích hiện tại:**\n' +
-                   '• "Tình trạng hiện tại của tôi"\n' +
-                   '• "Nhịp tim bây giờ thế nào?"\n' +
-                   '• "SpO2 của tôi có tốt không?"\n\n' +
-                   '📚 **Kiến thức y tế:**\n' +
-                   '• "Nhịp tim bình thường là bao nhiêu?"\n' +
-                   '• "SpO2 thấp có nguy hiểm không?"\n' +
-                   '• "Khi nào cần gặp bác sĩ?"\n\n' +
-                   '🏥 **Bệnh lý:**\n' +
-                   '• "COVID-19 cần theo dõi gì?"\n' +
-                   '• "Hen phế quản"\n' +
-                   '• "Cao huyết áp"\n\n' +
-                   '💊 **Lời khuyên:**\n' +
-                   '• "Làm gì để cải thiện sức khỏe?"\n' +
-                   '• "Nên tập thể dục thế nào?"\n' +
-                   '• "Chế độ ăn uống ra sao?"\n\n' +
-                   '💡 Hãy hỏi tôi một câu cụ thể nhé!';
-        }
-
-        // Thông báo nhỏ
-        function showNotification(message) {
-            // Tạo toast notification
-            const toast = document.createElement('div');
-            toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 9999; animation: slideIn 0.3s ease;';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-    </script>
-
-    <style>
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-    </style>
+        <button class="btn btn-danger" onclick="showPage('main')">◀ Quay lại trang chủ</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var t = localStorage.getItem('hm-theme') || 'dark';
+  if(t === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+
+function toggleTheme(){
+  var isLight = document.documentElement.hasAttribute('data-theme');
+  if(isLight){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('hm-theme','dark');
+  } else {
+    document.documentElement.setAttribute('data-theme','light');
+    localStorage.setItem('hm-theme','light');
+  }
+}
+
+function showPage(id){
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.getElementById('view-' + id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// Khởi tạo Firebase
+var firebaseConfig = {
+  apiKey: "AIzaSyCEfYu2WL_SZtfJPRpXMnUJ3i-zPTk6BeY",
+  databaseURL: "https://heart-monitor-fd061-default-rtdb.firebaseio.com/",
+  projectId: "heart-monitor-fd061"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+
+function formatTime(t){
+  if(!t) return '—';
+  if(t < 1600000000000) return Math.floor(t/1000) + 's sau boot';
+  var d = new Date(t);
+  var timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var dateStr = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return timeStr + '<br>' + dateStr;
+}
+
+// SVGs cho lịch sử
+var heartSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="var(--red)"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+var dropSVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="var(--cyan)"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>';
+
+db.ref('/').on('value', function(snap){
+  var d = snap.val();
+  if(!d) return;
+  var bpm = d.NhipTim || 0;
+  var spo2 = d.Oxy || 0;
+  document.getElementById('bpm').innerText = bpm > 0 ? bpm : '--';
+  document.getElementById('spo2').innerText = spo2 > 0 ? spo2 : '--';
+
+  var badge = document.getElementById('bpm-badge');
+  if(bpm > 100) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim cao!'; }
+  else if(bpm < 50 && bpm > 0) { badge.className='badge badge-bad'; badge.innerText='⚠ Nhịp tim thấp!'; }
+  else if(bpm > 0) { badge.className='badge badge-ok'; badge.innerText='✓ Bình thường'; }
+  else { badge.className='badge badge-wait'; badge.innerText='Đang chờ dữ liệu...'; }
+
+  var histEl = document.getElementById('history-list');
+  if(d.History){
+    var items = Object.values(d.History).reverse().slice(0,10);
+    histEl.innerHTML = items.map(function(i){
+      return '<div class="history-item">'
+        + '<span style="display:flex; align-items:center; gap:12px;">'
+        + '<b style="color:var(--red); display:flex; align-items:center; gap:4px;">' + heartSVG + (i.b||'?') + '</b>'
+        + '<span style="color:var(--muted)">|</span>'
+        + '<b style="color:var(--cyan); display:flex; align-items:center; gap:4px;">' + dropSVG + (i.s||'?') + '%</b>'
+        + '</span>'
+        + '<span class="history-time">' + formatTime(i.t) + '</span>'
+        + '</div>';
+    }).join('');
+  }
+});
+
+function sendRemoteConfig(){
+  var s = document.getElementById('r-ssid').value.trim();
+  var p = document.getElementById('r-pass').value;
+  var ph = document.getElementById('r-phone').value.trim();
+  if(!s || !p || !ph) return alert('Vui lòng điền đầy đủ thông tin!');
+  if(!confirm('Xác nhận gửi cấu hình?')) return;
+
+  db.ref('/RemoteConfig').set({ ssid:s, pass:p, phone:ph, timestamp:Date.now() })
+  .then(function(){
+    alert('Đã gửi thành công!');
+    showPage('main');
+  });
+}
+</script>
 </body>
 </html>
